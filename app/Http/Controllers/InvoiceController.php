@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -31,7 +32,8 @@ class InvoiceController extends Controller
                 'people.lines' => fn ($query) => $query
                     ->select('id', 'invoice_person_id', 'price_without_vat', 'price_with_vat'),
             ])
-            ->latest('created_at')
+            ->orderByDesc('billing_period')
+            ->orderByDesc('created_at')
             ->paginate($perPage > 0 ? $perPage : 10)
             ->withQueryString()
             ->through(fn (Invoice $invoice) => $this->transformInvoiceForUser($invoice, $user));
@@ -142,6 +144,8 @@ class InvoiceController extends Controller
         return [
             'id' => $invoice->id,
             'source_filename' => $invoice->source_filename,
+            'billing_period' => $invoice->billing_period,
+            'billing_period_label' => $this->formatBillingPeriod($invoice->billing_period),
             'row_count' => $invoice->row_count,
             'created_at' => optional($invoice->created_at)->toDateTimeString(),
             'people_count' => $people->count(),
@@ -189,6 +193,8 @@ class InvoiceController extends Controller
             'invoice' => $invoice ? [
                 'id' => $invoice->id,
                 'source_filename' => $invoice->source_filename,
+                'billing_period' => $invoice->billing_period,
+                'billing_period_label' => $this->formatBillingPeriod($invoice->billing_period),
                 'created_at' => optional($invoice->created_at)->toDateTimeString(),
             ] : null,
             'lines' => $invoicePerson->lines
@@ -201,6 +207,23 @@ class InvoiceController extends Controller
                     'price_with_vat' => round((float) $line->price_with_vat, 2),
                 ])->all(),
         ];
+    }
+
+    private function formatBillingPeriod(?string $billingPeriod): ?string
+    {
+        if (empty($billingPeriod)) {
+            return null;
+        }
+
+        try {
+            $period = Carbon::createFromFormat('Y-m', $billingPeriod)->startOfMonth();
+        } catch (\Exception $exception) {
+            return $billingPeriod;
+        }
+
+        return $period
+            ->locale(app()->getLocale())
+            ->translatedFormat('F Y');
     }
 
     private function filterPeopleForRole(Collection $people, $role): Collection
