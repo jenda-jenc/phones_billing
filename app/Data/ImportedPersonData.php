@@ -48,6 +48,7 @@ class ImportedPersonData implements Arrayable
     public float $celkem_s_dph = 0;
     public float $zaplati = 0;
     public ?float $vat = null;
+    public ?int $invoicePersonId = null;
 
     /** @var ServiceEntry[] */
     public array $sluzby = [];
@@ -83,6 +84,7 @@ class ImportedPersonData implements Arrayable
             'celkem' => round($this->celkem,4),
             'celkem_s_dph' => round($this->celkem_s_dph,4),
             'zaplati' => round($this->zaplati,2),
+            'invoice_person_id' => $this->invoicePersonId,
             'sluzby' => array_map(fn($s) => $s->toArray(), $this->sluzby),
             'aplikovana_pravidla' => $this->aplikovanaPravidla,
         ];

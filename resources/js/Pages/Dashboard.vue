@@ -108,6 +108,13 @@ const formatCurrency = (value) => {
                                             </td>
                                             <td class="whitespace-nowrap px-4 py-3 text-sm text-right">
                                                 <div class="flex justify-end gap-2">
+                                                    <Link
+                                                        v-if="invoice.detail_url"
+                                                        :href="invoice.detail_url"
+                                                        class="inline-flex items-center rounded border border-indigo-600 px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
+                                                    >
+                                                        Detail
+                                                    </Link>
                                                     <a
                                                         :href="invoice.downloads.csv"
                                                         class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100"

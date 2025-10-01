@@ -82,13 +82,20 @@ async function sendNotification(name, phone, data) {
     const key = `${name}-${phone}`;
     isSendingNotification.value[key] = true;
     notificationMessage.value[key] = '';
+    const invoicePersonId = data.invoice_person_id;
+
+    if (!invoicePersonId) {
+        notificationMessage.value[key] = 'Chybí vazba na vyúčtování – nelze odeslat e-mail.';
+        isSendingNotification.value[key] = false;
+        return;
+    }
+
     try {
-        // TODO: ZDE POZDĚJI NAHRADÍŠ ENDPOINTEM (např. await axios.post('/api/send-notification', { ... }))
-        // await axios.post('/api/send-notification', { name, phone, data });
-        await new Promise(resolve => setTimeout(resolve, 1300)); // Dummy simulace
-        notificationMessage.value[key] = 'E-mail byl úspěšně odeslán!(Dělám si srandu, nebyl.)';
+        const response = await axios.post(`/invoices/${invoicePersonId}/email`);
+        notificationMessage.value[key] = response?.data?.message ?? 'E-mail byl úspěšně odeslán.';
     } catch (e) {
-        notificationMessage.value[key] = 'Chyba při odesílání e-mailu!';
+        const message = e?.response?.data?.message ?? 'Chyba při odesílání e-mailu!';
+        notificationMessage.value[key] = message;
     } finally {
         isSendingNotification.value[key] = false;
     }
