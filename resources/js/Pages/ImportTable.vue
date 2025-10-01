@@ -4,9 +4,30 @@ import { Head, usePage } from '@inertiajs/vue3';
 import { reactive, ref, computed } from 'vue';
 import axios from 'axios'; // Přidej pokud budeš posílat request na backend
 
-const { props } = usePage();
-const importData = reactive(props.importData || {});
-const flash = computed(() => props.flash || {});
+const page = usePage();
+const passedProps = defineProps({
+    importData: {
+        type: Object,
+        default: null,
+    },
+    invoiceId: {
+        type: [Number, String],
+        default: null,
+    },
+});
+
+const rawImportData = computed(
+    () => passedProps.importData ?? page.props.importData ?? null,
+);
+const safeImportData = computed(() => rawImportData.value ?? {});
+const invoiceId = computed(
+    () => passedProps.invoiceId ?? page.props.invoiceId ?? null,
+);
+const flash = computed(() => page.props.flash || {});
+const isMissingImportData = computed(() => rawImportData.value === null);
+const hasImportRows = computed(
+    () => Object.keys(safeImportData.value).length > 0,
+);
 
 const expandedRows = reactive({});
 
@@ -20,10 +41,11 @@ const search = ref('');
 const searchBy = ref('name');
 
 const filteredImportData = computed(() => {
-    if (!search.value.trim()) return importData;
+    const baseData = safeImportData.value;
+    if (!search.value.trim()) return baseData;
     const needle = search.value.trim().toLowerCase();
     const result = {};
-    Object.entries(importData).forEach(([name, phones]) => {
+    Object.entries(baseData).forEach(([name, phones]) => {
         let matchedPhones = {};
         Object.entries(phones).forEach(([phone, data]) => {
             if (
@@ -44,6 +66,7 @@ const filteredImportData = computed(() => {
 
 // Export do CSV
 function saveReport() {
+    if (!hasImportRows.value) return;
     const dataToExport = [];
     Object.entries(filteredImportData.value).forEach(([name, phones]) => {
         Object.entries(phones).forEach(([phone, data]) => {
@@ -126,6 +149,15 @@ async function sendNotification(name, phone, data) {
             </h2>
         </template>
 
+        <div
+            v-if="isMissingImportData"
+            class="mx-auto mt-6 max-w-3xl rounded-md border border-red-300 bg-red-50 px-4 py-3 text-red-900 shadow"
+        >
+            <span class="font-semibold">Chyba:</span>
+            Nepodařilo se načíst data importu. Zkuste stránku načíst znovu
+            nebo opakujte import.
+        </div>
+
         <!-- Flash notifikace -->
         <div v-if="flash.success" class="mx-auto mt-6 max-w-3xl">
             <div
@@ -149,7 +181,17 @@ async function sendNotification(name, phone, data) {
             <h1 class="mb-4 text-xl font-semibold text-red-500">
                 Dlužníci z importu
             </h1>
+            <p v-if="invoiceId" class="mb-4 text-sm text-gray-500">
+                Vyúčtování #{{ invoiceId }}
+            </p>
             <div
+                v-if="!isMissingImportData && !hasImportRows"
+                class="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"
+            >
+                Aktuální import neobsahuje žádné položky k zobrazení.
+            </div>
+            <div
+                v-if="!isMissingImportData && hasImportRows"
                 class="overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 shadow-inner"
             >
                 <table
@@ -167,7 +209,7 @@ async function sendNotification(name, phone, data) {
                     </thead>
                     <tbody>
                         <template
-                            v-for="(phones, name) in importData"
+                            v-for="(phones, name) in filteredImportData"
                             :key="name"
                         >
                             <template

@@ -36,8 +36,10 @@ Route::post('/invoices/{invoicePerson}/email', [InvoiceController::class, 'email
 
 Route::get('/import', [ImportController::class, 'index'])->middleware(['auth', 'verified'])->name('import');
 Route::post('/import/process', [ImportController::class, 'processImport'])->middleware(['auth', 'verified'])->name('import.process');
-Route::post('/import-table', [ImportController::class, 'processImport'])->middleware(['auth', 'verified'])->name('import.process');
-Route::get('/import-table', [ImportController::class, 'index'])->middleware(['auth', 'verified'])->name('import');
+Route::get('/import/{invoice}', [ImportController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->whereNumber('invoice')
+    ->name('import.show');
 Route::get('/import/data', function () {
     return [
         'tariffs' => \App\Models\Tariff::all(),

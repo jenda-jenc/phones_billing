@@ -194,6 +194,12 @@ const formatCurrency = (value) => {
                                                     class="flex justify-end gap-2"
                                                 >
                                                     <Link
+                                                        :href="route('import.show', invoice.id)"
+                                                        class="inline-flex items-center rounded border border-indigo-600 px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
+                                                    >
+                                                        Import
+                                                    </Link>
+                                                    <Link
                                                         v-if="
                                                             invoice.detail_url
                                                         "
