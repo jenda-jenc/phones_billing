@@ -47,6 +47,7 @@ class ImportedPersonData implements Arrayable
     public float $celkem = 0;
     public float $celkem_s_dph = 0;
     public float $zaplati = 0;
+    public ?float $vat = null;
 
     /** @var ServiceEntry[] */
     public array $sluzby = [];

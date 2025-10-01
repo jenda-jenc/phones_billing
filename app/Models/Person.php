@@ -27,4 +27,14 @@ class Person extends Model
     {
         return $this->belongsToMany(Group::class, 'group_person');
     }
+
+    public function invoicePeople()
+    {
+        return $this->hasMany(InvoicePerson::class);
+    }
+
+    public function invoiceLines()
+    {
+        return $this->hasMany(InvoiceLine::class);
+    }
 }
