@@ -40,7 +40,7 @@ return new class extends Migration
         Schema::create('invoice_lines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('invoice_person_id')->constrained('invoice_people')->cascadeOnDelete();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->foreignId('person_id')->constrained('people')->noActionOnDelete();
             $table->string('group_name')->nullable();
             $table->string('tariff')->nullable();
             $table->string('service_name');
