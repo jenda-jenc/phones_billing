@@ -13,11 +13,11 @@ const columnsServices = ref([]);
 const servicesFileObj = ref(null);
 
 const mappingFields = ref({
-    'phone_number': { label: 'Telefonní číslo', value: '' },
-    'tarif': { label: 'Tarif', value: '', index: '' },
-    'service': { label: 'Služba', value: '', index: '' },
-    'price': { label: 'Částka', value: '', index: '' },
-    'vat': { label: 'Dph', value: '', index: '' },
+    phone_number: { label: 'Telefonní číslo', value: '' },
+    tarif: { label: 'Tarif', value: '', index: '' },
+    service: { label: 'Služba', value: '', index: '' },
+    price: { label: 'Částka', value: '', index: '' },
+    vat: { label: 'Dph', value: '', index: '' },
 });
 
 const uniqueServices = ref([]);
@@ -32,7 +32,7 @@ const assignError = ref('');
 const isAssigning = ref(false);
 
 const allTariffNames = computed(() =>
-    (usePage().props.tariffs || []).map(t => t.name)
+    (usePage().props.tariffs || []).map((t) => t.name),
 );
 const allTariffs = computed(() => usePage().props.tariffs || []);
 const allGroups = computed(() => usePage().props.groups || []);
@@ -40,8 +40,8 @@ const allGroups = computed(() => usePage().props.groups || []);
 const allGroupTariffNames = computed(() => {
     const groups = usePage().props.groups || [];
     const names = [];
-    groups.forEach(group => {
-        (group.tariffs || []).forEach(tariff => {
+    groups.forEach((group) => {
+        (group.tariffs || []).forEach((tariff) => {
             names.push(tariff.name);
         });
     });
@@ -58,7 +58,7 @@ function refreshServiceWarnings() {
         return;
     }
     const lines = servicesCsvText.value.split(/\r\n|\n/);
-    const header = lines[0].split(';').map(c => c.trim());
+    const header = lines[0].split(';').map((c) => c.trim());
     const idx = header.indexOf(newVal);
     if (idx === -1) {
         uniqueServices.value = [];
@@ -76,8 +76,12 @@ function refreshServiceWarnings() {
         }
     }
     uniqueServices.value = Array.from(set);
-    unknownServices.value = uniqueServices.value.filter(s => !allTariffNames.value.includes(s));
-    unassignedServices.value = uniqueServices.value.filter(s => !allGroupTariffNames.value.includes(s));
+    unknownServices.value = uniqueServices.value.filter(
+        (s) => !allTariffNames.value.includes(s),
+    );
+    unassignedServices.value = uniqueServices.value.filter(
+        (s) => !allGroupTariffNames.value.includes(s),
+    );
 }
 
 // Sleduj výběr sloupce Služba a aktualizuj upozornění
@@ -101,7 +105,7 @@ const saveUnknownTariffs = async () => {
     isSavingTariffs.value = true;
     try {
         await axios.post(route('tariffs.bulk-store'), {
-            names: unknownServices.value
+            names: unknownServices.value,
         });
         await refreshTariffsAndGroups();
         await nextTick();
@@ -166,7 +170,7 @@ const parseCSVHeader = (file) => {
             const lines = text.split(/\r\n|\n/);
             if (lines.length > 0) {
                 const headerLine = lines[0];
-                const columns = headerLine.split(';').map(col => col.trim());
+                const columns = headerLine.split(';').map((col) => col.trim());
                 resolve(columns);
             } else {
                 reject(new Error('CSV soubor neobsahuje žádná data.'));
@@ -185,7 +189,7 @@ const handleServicesFile = async (event) => {
             const headers = await parseCSVHeader(file);
             columnsServices.value = headers;
         } catch (error) {
-            console.error("Chyba při načítání CSV souboru služeb:", error);
+            console.error('Chyba při načítání CSV souboru služeb:', error);
         }
     }
 };
@@ -202,13 +206,13 @@ const processMapping = () => {
 const canShowProcessButton = computed(() => {
     return (
         servicesFileObj.value !== null &&
-        Object.values(mappingFields.value).every(field => field.value !== '')
+        Object.values(mappingFields.value).every((field) => field.value !== '')
     );
 });
 </script>
 
 <template>
-    <Head title="Import CSV souborů"/>
+    <Head title="Import CSV souborů" />
     <AuthenticatedLayout>
         <template #header>
             <h2 class="text-2xl font-bold leading-tight text-gray-800">
@@ -217,15 +221,24 @@ const canShowProcessButton = computed(() => {
         </template>
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-lg sm:rounded-lg p-8">
+                <div
+                    class="overflow-hidden bg-white p-8 shadow-lg sm:rounded-lg"
+                >
                     <!-- Sekce pro nahrání CSV souborů -->
-                    <div class="grid grid-cols-1 gap-6 justify-items-center">
+                    <div class="grid grid-cols-1 justify-items-center gap-6">
                         <div class="text-center">
-                            <h3 class="text-lg font-semibold mb-2 text-gray-700">Nahrát CSV soubor služeb</h3>
-                            <div class="flex items-center justify-center space-x-4">
+                            <h3
+                                class="mb-2 text-lg font-semibold text-gray-700"
+                            >
+                                Nahrát CSV soubor služeb
+                            </h3>
+                            <div
+                                class="flex items-center justify-center space-x-4"
+                            >
                                 <label class="cursor-pointer">
                                     <div
-                                        class="bg-blue-500 text-white px-6 py-2 rounded shadow hover:shadow-lg hover:bg-blue-600 transition-all duration-150">
+                                        class="rounded bg-blue-500 px-6 py-2 text-white shadow transition-all duration-150 hover:bg-blue-600 hover:shadow-lg"
+                                    >
                                         Vyberte soubor
                                     </div>
                                     <input
@@ -237,82 +250,135 @@ const canShowProcessButton = computed(() => {
                                 </label>
                             </div>
                         </div>
-                        <div v-if="servicesFileObj" class="text-sm text-center">
-                            <p>Soubor <i class="text-green-500">{{ servicesFileObj.name }}</i> byl úspěšně nahrán!</p>
-                            <p>V tabulce níže prosím přiřaďte sloupce z nahraného CSV na hodnoty ve sloupci popis.</p>
+                        <div v-if="servicesFileObj" class="text-center text-sm">
+                            <p>
+                                Soubor
+                                <i class="text-green-500">{{
+                                    servicesFileObj.name
+                                }}</i>
+                                byl úspěšně nahrán!
+                            </p>
+                            <p>
+                                V tabulce níže prosím přiřaďte sloupce z
+                                nahraného CSV na hodnoty ve sloupci popis.
+                            </p>
                         </div>
                     </div>
                     <!-- Mapování sloupců -->
                     <div v-if="columnsServices.length" class="mt-10">
-                        <h3 class="text-lg font-semibold mb-4 text-gray-700 text-center accent-green-500">
+                        <h3
+                            class="mb-4 text-center text-lg font-semibold text-gray-700 accent-green-500"
+                        >
                             Mapování sloupců
                         </h3>
-                        <table class="table-auto w-full border-collapse">
+                        <table class="w-full table-auto border-collapse">
                             <thead>
-                            <tr>
-                                <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-left text-gray-700 font-semibold">
-                                    Popis
-                                </th>
-                                <th class="border border-gray-300 bg-gray-50 px-4 py-2 text-left text-gray-700 font-semibold">
-                                    Sloupec ze Služeb
-                                </th>
-                            </tr>
+                                <tr>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold text-gray-700"
+                                    >
+                                        Popis
+                                    </th>
+                                    <th
+                                        class="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold text-gray-700"
+                                    >
+                                        Sloupec ze Služeb
+                                    </th>
+                                </tr>
                             </thead>
                             <tbody>
-                            <tr v-for="(field, index) in mappingFields" :key="index"
-                                class="hover:bg-gray-50 odd:bg-white even:bg-gray-50">
-                                <td class="border border-gray-300 px-4 py-2 text-gray-600">
-                                    {{ field.label }}
-                                </td>
-                                <td class="border border-gray-300 px-4 py-2">
-                                    <div>
-                                        <select
-                                            v-model="field.value"
-                                            @change="field.index = $event.target.selectedIndex - 1"
-                                            class="border p-2 w-full rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        >
-                                            <option disabled value="">Vyberte sloupec z csv</option>
-                                            <option v-for="(column, idx) in columnsServices" :key="idx" :value="column">
-                                                {{ column }}
-                                            </option>
-                                        </select>
-                                    </div>
-                                </td>
-                            </tr>
+                                <tr
+                                    v-for="(field, index) in mappingFields"
+                                    :key="index"
+                                    class="odd:bg-white even:bg-gray-50 hover:bg-gray-50"
+                                >
+                                    <td
+                                        class="border border-gray-300 px-4 py-2 text-gray-600"
+                                    >
+                                        {{ field.label }}
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 px-4 py-2"
+                                    >
+                                        <div>
+                                            <select
+                                                v-model="field.value"
+                                                @change="
+                                                    field.index =
+                                                        $event.target
+                                                            .selectedIndex - 1
+                                                "
+                                                class="w-full rounded border p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                                <option disabled value="">
+                                                    Vyberte sloupec z csv
+                                                </option>
+                                                <option
+                                                    v-for="(
+                                                        column, idx
+                                                    ) in columnsServices"
+                                                    :key="idx"
+                                                    :value="column"
+                                                >
+                                                    {{ column }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Služby, které nejsou v DB -->
                     <div v-if="unknownServices.length" class="mt-6">
-                        <div class="bg-yellow-100 border border-yellow-400 text-yellow-900 px-4 py-3 rounded mb-2">
+                        <div
+                            class="mb-2 rounded border border-yellow-400 bg-yellow-100 px-4 py-3 text-yellow-900"
+                        >
                             <b>Pozor:</b> Tyto služby nejsou v databázi tarifů!
                         </div>
                         <ul class="flex flex-wrap gap-2">
-                            <li v-for="srv in unknownServices" :key="srv" class="bg-yellow-200 rounded px-2 py-1">
+                            <li
+                                v-for="srv in unknownServices"
+                                :key="srv"
+                                class="rounded bg-yellow-200 px-2 py-1"
+                            >
                                 {{ srv }}
                             </li>
                         </ul>
                         <button
                             v-if="unknownServices.length"
                             @click="saveUnknownTariffs"
-                            class="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow"
+                            class="mt-4 rounded bg-green-600 px-6 py-2 text-white shadow hover:bg-green-700"
                             :disabled="isSavingTariffs"
                         >
-                            {{ isSavingTariffs ? 'Ukládám...' : 'Uložit tyto služby do databáze' }}
+                            {{
+                                isSavingTariffs
+                                    ? 'Ukládám...'
+                                    : 'Uložit tyto služby do databáze'
+                            }}
                         </button>
                     </div>
 
                     <!-- Služby, které nejsou přiřazeny žádné skupině -->
                     <div v-if="unassignedServices.length" class="mt-6">
-                        <div class="bg-blue-100 border border-blue-400 text-blue-900 px-4 py-3 rounded mb-2">
-                            <b>Info:</b> Tyto služby nejsou přiřazeny k žádné skupině tarifů:
+                        <div
+                            class="mb-2 rounded border border-blue-400 bg-blue-100 px-4 py-3 text-blue-900"
+                        >
+                            <b>Info:</b> Tyto služby nejsou přiřazeny k žádné
+                            skupině tarifů:
                         </div>
                         <ul class="flex flex-wrap gap-2">
-                            <li v-for="srv in unassignedServices" :key="srv" class="bg-blue-200 rounded px-2 py-1 flex items-center gap-2">
+                            <li
+                                v-for="srv in unassignedServices"
+                                :key="srv"
+                                class="flex items-center gap-2 rounded bg-blue-200 px-2 py-1"
+                            >
                                 <span>{{ srv }}</span>
-                                <button class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-0.5 rounded"
-                                        @click="openAssignModal(srv)">
+                                <button
+                                    class="rounded bg-blue-500 px-2 py-0.5 text-xs text-white hover:bg-blue-600"
+                                    @click="openAssignModal(srv)"
+                                >
                                     Přiřadit ke skupině
                                 </button>
                             </li>
@@ -320,10 +386,13 @@ const canShowProcessButton = computed(() => {
                     </div>
 
                     <!-- Tlačítko pro spuštění zpracování -->
-                    <div v-if="canShowProcessButton" class="mt-10 flex justify-center">
+                    <div
+                        v-if="canShowProcessButton"
+                        class="mt-10 flex justify-center"
+                    >
                         <button
                             @click="processMapping"
-                            class="bg-blue-500 text-white px-8 py-2 rounded shadow hover:shadow-lg hover:bg-blue-600 transition-all duration-150"
+                            class="rounded bg-blue-500 px-8 py-2 text-white shadow transition-all duration-150 hover:bg-blue-600 hover:shadow-lg"
                         >
                             Zpracovat
                         </button>

@@ -18,7 +18,7 @@ createInertiaApp({
         ),
     setup({ el, App, props, plugin }) {
         return createApp(AppLayout, {
-            default: () => h(App, props)
+            default: () => h(App, props),
         })
             .use(plugin)
             .use(ZiggyVue)

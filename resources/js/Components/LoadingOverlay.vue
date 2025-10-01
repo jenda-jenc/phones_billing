@@ -4,15 +4,15 @@
     </div>
 </template>
 <script setup>
-import SenatLoaderX from './SenatLoaderX.vue'
-const props = defineProps({ show: Boolean })
+import SenatLoaderX from './SenatLoaderX.vue';
+const props = defineProps({ show: Boolean });
 </script>
 <style scoped>
 .loading-overlay {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
     align-items: center;

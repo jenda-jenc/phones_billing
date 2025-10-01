@@ -26,15 +26,17 @@ const verificationLinkSent = computed(
         <Head title="Email Verification" />
 
         <div class="mb-4 text-sm text-gray-600">
-            Děkujeme za registraci! Než začnete používat aplikaci, Prosím potvrďte pravost vašeho emailu kliknutím na odkaz, který jsme vám zaslali :)
-           Jestli, že jste email neobdrželi, rádi vám pošleme nový.
+            Děkujeme za registraci! Než začnete používat aplikaci, Prosím
+            potvrďte pravost vašeho emailu kliknutím na odkaz, který jsme vám
+            zaslali :) Jestli, že jste email neobdrželi, rádi vám pošleme nový.
         </div>
 
         <div
             class="mb-4 text-sm font-medium text-green-600"
             v-if="verificationLinkSent"
         >
-            Nový ověřovací odkaz Vám byl zaslán na uvedenou emailovou adresu při registraci.
+            Nový ověřovací odkaz Vám byl zaslán na uvedenou emailovou adresu při
+            registraci.
         </div>
 
         <form @submit.prevent="submit">

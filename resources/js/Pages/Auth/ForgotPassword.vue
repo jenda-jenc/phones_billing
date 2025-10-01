@@ -26,14 +26,11 @@ const submit = () => {
         <Head title="Forgot Password" />
 
         <div class="mb-4 text-sm text-gray-600">
-            Zapoměli jste své heslo? Žádný problém.
-            Zadejte svůj email abychom Vám mohli zaslat potvrzovací odkaz ke změně hesla.
+            Zapoměli jste své heslo? Žádný problém. Zadejte svůj email abychom
+            Vám mohli zaslat potvrzovací odkaz ke změně hesla.
         </div>
 
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}
         </div>
 

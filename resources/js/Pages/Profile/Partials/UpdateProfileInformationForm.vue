@@ -30,7 +30,8 @@ const form = useForm({
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                Aktualizujte informace o vašem profilu uživatele jako je jméno a email.
+                Aktualizujte informace o vašem profilu uživatele jako je jméno a
+                email.
             </p>
         </header>
 
@@ -86,12 +87,14 @@ const form = useForm({
                     v-show="status === 'verification-link-sent'"
                     class="mt-2 text-sm font-medium text-green-600"
                 >
-                   Nový ověřovací link byl zaslán na vaši emailovou adresu.
+                    Nový ověřovací link byl zaslán na vaši emailovou adresu.
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Uložit</PrimaryButton>
+                <PrimaryButton :disabled="form.processing"
+                    >Uložit</PrimaryButton
+                >
 
                 <Transition
                     enter-active-class="transition ease-in-out"

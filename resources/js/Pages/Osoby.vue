@@ -21,7 +21,6 @@ const showGroupAssign = ref(false);
 const assignPerson = ref(null);
 const assignGroupId = ref('');
 
-
 // Potvrdí přiřazení skupiny (PATCH požadavek na správnou routu)
 const confirmAssignGroup = async () => {
     if (!assignPerson.value || !assignGroupId.value) return;
@@ -33,8 +32,8 @@ const confirmAssignGroup = async () => {
                 showGroupAssign.value = false;
                 assignPerson.value = null;
                 assignGroupId.value = '';
-            }
-        }
+            },
+        },
     );
 };
 
@@ -105,7 +104,7 @@ const deletePerson = async (id) => {
 </script>
 
 <template>
-    <Head title="Seznam Osob"/>
+    <Head title="Seznam Osob" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -115,28 +114,51 @@ const deletePerson = async (id) => {
         </template>
 
         <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-
+            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                 <div class="flex justify-end">
                     <button
-                        class="bg-blue-500 text-white px-6 py-3 rounded shadow hover:shadow-md hover:bg-blue-600 transition-all duration-150 flex items-center space-x-2"
+                        class="flex items-center space-x-2 rounded bg-blue-500 px-6 py-3 text-white shadow transition-all duration-150 hover:bg-blue-600 hover:shadow-md"
                         @click="toggleForm"
                     >
-                        <svg v-if="!showForm" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                             viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        <svg
+                            v-if="!showForm"
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                            />
                         </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"/>
+                        <svg
+                            v-else
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                         <span>{{ showForm ? 'Zavřít' : 'Nová osoba' }}</span>
                     </button>
                 </div>
 
-                <div v-if="showForm" class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <div
+                    v-if="showForm"
+                    class="rounded-lg border border-gray-200 bg-gray-50 p-6 shadow-md"
+                >
+                    <h3 class="mb-4 text-lg font-semibold text-gray-800">
                         {{ isEditing ? 'Upravit osobu' : 'Přidat novou osobu' }}
                     </h3>
                     <PersonForm
@@ -149,20 +171,54 @@ const deletePerson = async (id) => {
                 </div>
 
                 <!-- Inline assign group select -->
-                <div v-if="showGroupAssign" class="my-6 bg-blue-50 rounded-lg p-4 border border-blue-200 flex items-center gap-4">
-                    <span>Přiřadit skupinu osobě <b>{{ assignPerson?.name }}({{ assignPerson?.phone }})</b>:</span>
-                    <select v-model="assignGroupId" class="border p-2 px-8 rounded ">
-                        <option class="" value="" disabled>Vyberte skupinu</option>
-                        <option v-for="group in usePage().props.groups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                <div
+                    v-if="showGroupAssign"
+                    class="my-6 flex items-center gap-4 rounded-lg border border-blue-200 bg-blue-50 p-4"
+                >
+                    <span
+                        >Přiřadit skupinu osobě
+                        <b
+                            >{{ assignPerson?.name }}({{
+                                assignPerson?.phone
+                            }})</b
+                        >:</span
+                    >
+                    <select
+                        v-model="assignGroupId"
+                        class="rounded border p-2 px-8"
+                    >
+                        <option class="" value="" disabled>
+                            Vyberte skupinu
+                        </option>
+                        <option
+                            v-for="group in usePage().props.groups"
+                            :key="group.id"
+                            :value="group.id"
+                        >
+                            {{ group.name }}
+                        </option>
                     </select>
-                    <button @click="confirmAssignGroup" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" :disabled="!assignGroupId">
+                    <button
+                        @click="confirmAssignGroup"
+                        class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                        :disabled="!assignGroupId"
+                    >
                         Přiřadit
                     </button>
-                    <button @click="showGroupAssign = false" class="bg-red-600 hover:bg-red-500 text-white hover:text-red-900 px-4 py-2 rounded">Zrušit</button>
+                    <button
+                        @click="showGroupAssign = false"
+                        class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-500 hover:text-red-900"
+                    >
+                        Zrušit
+                    </button>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Seznam osob</h3>
+                <div
+                    class="rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+                >
+                    <h3 class="mb-4 text-lg font-semibold text-gray-800">
+                        Seznam osob
+                    </h3>
                     <PersonTable
                         :people="usePage().props.people"
                         :groups="usePage().props.groups"

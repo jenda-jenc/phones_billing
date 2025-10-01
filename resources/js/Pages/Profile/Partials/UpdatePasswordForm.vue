@@ -36,9 +36,7 @@ const updatePassword = () => {
 <template>
     <section>
         <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Změna hesla
-            </h2>
+            <h2 class="text-lg font-medium text-gray-900">Změna hesla</h2>
 
             <p class="mt-1 text-sm text-gray-600">
                 Ujistěte se že váš účet chrání dostatečně silné a dlouhé heslo.
@@ -100,7 +98,9 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Uložit</PrimaryButton>
+                <PrimaryButton :disabled="form.processing"
+                    >Uložit</PrimaryButton
+                >
 
                 <Transition
                     enter-active-class="transition ease-in-out"

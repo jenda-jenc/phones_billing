@@ -64,7 +64,7 @@ const editGroup = (group) => {
         setTimeout(() => {
             groupFormRef.value?.$el.querySelector('input')?.focus();
         }, 0);
-    },0);
+    }, 0);
 };
 
 const deleteGroup = async (id) => {
@@ -90,29 +90,56 @@ const openTariffModal = (group) => {
         </template>
 
         <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-
+            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
                 <div class="flex justify-end">
                     <button
-                        class="bg-blue-500 text-white px-6 py-3 rounded shadow hover:shadow-md hover:bg-blue-600 transition-all duration-150 flex items-center space-x-2"
+                        class="flex items-center space-x-2 rounded bg-blue-500 px-6 py-3 text-white shadow transition-all duration-150 hover:bg-blue-600 hover:shadow-md"
                         @click="toggleForm"
                     >
-                        <svg v-if="!showForm" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                             viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        <svg
+                            v-if="!showForm"
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                            />
                         </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                             stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"/>
+                        <svg
+                            v-else
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                         <span>{{ showForm ? 'Zavřít' : 'Nová skupina' }}</span>
                     </button>
                 </div>
 
-                <div v-if="showForm" class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        {{ isEditing ? 'Upravit skupinu' : 'Přidat novou skupinu' }}
+                <div
+                    v-if="showForm"
+                    class="rounded-lg border border-gray-200 bg-gray-50 p-6 shadow-md"
+                >
+                    <h3 class="mb-4 text-lg font-semibold text-gray-800">
+                        {{
+                            isEditing
+                                ? 'Upravit skupinu'
+                                : 'Přidat novou skupinu'
+                        }}
                     </h3>
                     <TariffGroupForm
                         ref="groupFormRef"
@@ -123,8 +150,12 @@ const openTariffModal = (group) => {
                     />
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Seznam skupin služeb</h3>
+                <div
+                    class="rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+                >
+                    <h3 class="mb-4 text-lg font-semibold text-gray-800">
+                        Seznam skupin služeb
+                    </h3>
                     <TariffGroupTable
                         :groups="usePage().props.groups"
                         @attach-tariff="openTariffModal"

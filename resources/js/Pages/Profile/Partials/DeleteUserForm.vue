@@ -41,12 +41,12 @@ const closeModal = () => {
 <template>
     <section class="space-y-6">
         <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Smazání účtu
-            </h2>
+            <h2 class="text-lg font-medium text-gray-900">Smazání účtu</h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                V případě že účet smažete, všechna data účtu budou nenávratně smazána. Předtím než účet smažete, ujistěte se, že žádná data z profilu neptřebujete nadále uchovávat.
+                V případě že účet smažete, všechna data účtu budou nenávratně
+                smazána. Předtím než účet smažete, ujistěte se, že žádná data z
+                profilu neptřebujete nadále uchovávat.
             </p>
         </header>
 
@@ -54,15 +54,14 @@ const closeModal = () => {
 
         <Modal :show="confirmingUserDeletion" @close="closeModal">
             <div class="p-6">
-                <h2
-                    class="text-lg font-medium text-gray-900"
-                >
+                <h2 class="text-lg font-medium text-gray-900">
                     Jste si jisti že chcete účet smazat?
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-600">
-                    Jakmile účet smažete, všechny data spojené s tímto učtzem budou nenávratně odstraněna.
-                    Zadejte zde své heslo pro potvrzení, že chcete účet smazat.
+                    Jakmile účet smažete, všechny data spojené s tímto učtzem
+                    budou nenávratně odstraněna. Zadejte zde své heslo pro
+                    potvrzení, že chcete účet smazat.
                 </p>
 
                 <div class="mt-6">
