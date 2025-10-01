@@ -30,6 +30,7 @@ class ImportController extends Controller
         }
 
         $servicesData = [];
+        $sourceFilename = $request->file('services')->getClientOriginalName();
         if (($handle = fopen($request->file('services')->getRealPath(), 'r')) !== false) {
             while (($row = fgetcsv($handle, 100000, ';')) !== false) {
                 $row = array_map(fn($f) => iconv('windows-1250', 'UTF-8', $f), $row);
@@ -40,11 +41,12 @@ class ImportController extends Controller
 
         $persons = Person::with(['groups.tariffs'])->get();
 
-        $importService = new ImportService($servicesData, $mapping, $persons);
-        $importData = $importService->process();
+        $importService = new ImportService($servicesData, $mapping, $persons, $sourceFilename);
+        $processed = $importService->process();
 
         return inertia('ImportTable', [
-            'importData' => $importData,
+            'importData' => $processed['data'],
+            'invoiceId' => $processed['invoice_id'],
         ])->with('success', 'Process proběhl v pořádku.');
     }
 }

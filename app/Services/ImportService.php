@@ -4,25 +4,38 @@ namespace App\Services;
 
 use App\Data\ImportedPersonData;
 use App\Data\ServiceEntry;
+use App\Models\Invoice;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ImportService
 {
     private array $mapping;
     private array $servicesData;
     private Collection $persons;
+    private ?string $sourceFilename;
 
-    public function __construct(array $servicesData, array $mapping, Collection $persons)
+    public function __construct(array $servicesData, array $mapping, Collection $persons, ?string $sourceFilename = null)
     {
         $this->servicesData = $servicesData;
         $this->mapping = $mapping;
         $this->persons = $persons;
+        $this->sourceFilename = $sourceFilename;
     }
 
     public function process(): array
     {
         $mobiles = $this->mapServices();
-        return $this->calculatePersons($mobiles);
+        $calculation = $this->calculatePersons($mobiles);
+
+        $invoice = DB::transaction(function () use ($calculation) {
+            return $this->storeInvoice($calculation['people']);
+        });
+
+        return [
+            'invoice_id' => $invoice->id,
+            'data' => $calculation['response'],
+        ];
     }
 
     /**
@@ -53,14 +66,14 @@ class ImportService
 
             if (!isset($mobiles[$phone])) {
                 $mobiles[$phone] = [
-                    'data' => new \App\Data\ImportedPersonData('', $phone),
+                    'data' => new ImportedPersonData('', $phone),
                     'vat'  => $vat,
                 ];
             }
 
             if ($price > 0) {
                 $mobiles[$phone]['data']->addService(
-                    new \App\Data\ServiceEntry(
+                    new ServiceEntry(
                         $group, $tarif, $service, $price, $cena_s_dph
                     )
                 );
@@ -72,12 +85,14 @@ class ImportService
 
     /**
      * Sjednoť data podle osob v DB, naplň jméno/limit a vypočítej "zaplati" a pravidla.
+     *
      * @param array $mobiles [phone] => ['data'=>ImportedPersonData, 'vat'=>float]
-     * @return array
+     * @return array{response: array, people: array<int, array{person: \App\Models\Person, data: ImportedPersonData}>}
      */
     private function calculatePersons(array $mobiles): array
     {
         $mapped = [];
+        $peopleForPersistence = [];
 
         foreach ($this->persons as $person) {
             $phone = $person->phone;
@@ -89,6 +104,7 @@ class ImportService
             $vat = $entry['vat'];
             $personData->name = $person->name;
             $personData->limit = (float)$person->limit;
+            $personData->vat = $vat;
 
             $platiSam = 0.0;
 
@@ -135,8 +151,17 @@ class ImportService
                 $mapped[$person->name] = [];
             }
             $mapped[$person->name][$phone] = $personData->toArray();
+
+            $peopleForPersistence[] = [
+                'person' => $person,
+                'data' => $personData,
+            ];
         }
-        return $mapped;
+
+        return [
+            'response' => $mapped,
+            'people' => $peopleForPersistence,
+        ];
     }
 
     private function unEscape(string $value): string
@@ -145,5 +170,60 @@ class ImportService
             return substr($value, 1, -1);
         }
         return $value;
+    }
+
+    /**
+     * @param array<int, array{person: \App\Models\Person, data: ImportedPersonData}> $peopleData
+     */
+    private function storeInvoice(array $peopleData): Invoice
+    {
+        $totalWithoutVat = 0;
+        $totalWithVat = 0;
+
+        $linesCount = 0;
+
+        foreach ($peopleData as $entry) {
+            $personData = $entry['data'];
+            $totalWithoutVat += $personData->celkem;
+            $totalWithVat += $personData->celkem_s_dph;
+            $linesCount += count($personData->sluzby);
+        }
+
+        $invoice = Invoice::create([
+            'source_filename' => $this->sourceFilename,
+            'mapping' => $this->mapping,
+            'row_count' => $linesCount,
+            'total_without_vat' => $totalWithoutVat,
+            'total_with_vat' => $totalWithVat,
+        ]);
+
+        foreach ($peopleData as $entry) {
+            $person = $entry['person'];
+            $personData = $entry['data'];
+
+            $invoicePerson = $invoice->people()->create([
+                'person_id' => $person->id,
+                'phone' => $personData->phone,
+                'vat_rate' => $personData->vat,
+                'total_without_vat' => $personData->celkem,
+                'total_with_vat' => $personData->celkem_s_dph,
+                'limit' => $personData->limit,
+                'payable' => $personData->zaplati,
+                'applied_rules' => $personData->aplikovanaPravidla ?: null,
+            ]);
+
+            foreach ($personData->sluzby as $service) {
+                $invoicePerson->lines()->create([
+                    'person_id' => $person->id,
+                    'group_name' => $service->skupina ?: null,
+                    'tariff' => $service->tarif ?: null,
+                    'service_name' => $service->sluzba,
+                    'price_without_vat' => $service->cena,
+                    'price_with_vat' => $service->cena_s_dph,
+                ]);
+            }
+        }
+
+        return $invoice;
     }
 }
