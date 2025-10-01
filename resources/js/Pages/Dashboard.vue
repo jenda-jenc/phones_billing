@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     invoices: {
@@ -15,6 +15,20 @@ const props = defineProps({
 });
 
 const hasInvoices = computed(() => props.invoices?.data?.length > 0);
+const isAdmin = computed(() => props.filters?.role === 'admin');
+
+const handlePersonSelect = (event) => {
+    if (!event?.target) {
+        return;
+    }
+
+    const url = event.target.value;
+
+    if (url) {
+        router.visit(url);
+        event.target.selectedIndex = 0;
+    }
+};
 
 const formatCurrency = (value) => {
     if (value === null || value === undefined) {
@@ -199,8 +213,31 @@ const formatCurrency = (value) => {
                                                     >
                                                         Import
                                                     </Link>
-                                                    <Link
+                                                    <select
                                                         v-if="
+                                                            isAdmin &&
+                                                            invoice.people_links &&
+                                                            invoice.people_links.length
+                                                        "
+                                                        class="inline-flex items-center rounded border border-indigo-600 px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        aria-label="Vyberte osobu z faktury"
+                                                        @change="handlePersonSelect"
+                                                    >
+                                                        <option value="">
+                                                            Osoby (
+                                                            {{ invoice.people_links.length }}
+                                                            )
+                                                        </option>
+                                                        <option
+                                                            v-for="person in invoice.people_links"
+                                                            :key="person.id"
+                                                            :value="person.detail_url"
+                                                        >
+                                                            {{ person.name }}
+                                                        </option>
+                                                    </select>
+                                                    <Link
+                                                        v-else-if="
                                                             invoice.detail_url
                                                         "
                                                         :href="
