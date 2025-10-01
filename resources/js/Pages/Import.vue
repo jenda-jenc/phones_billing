@@ -11,6 +11,7 @@ const loadingCustom = inject('loadingCustom', ref(false));
 
 const columnsServices = ref([]);
 const servicesFileObj = ref(null);
+const billingPeriod = ref('');
 
 const mappingFields = ref({
     phone_number: { label: 'Telefonní číslo', value: '' },
@@ -198,6 +199,7 @@ const processMapping = () => {
     const formData = new FormData();
     formData.append('services', servicesFileObj.value);
     formData.append('mapping', JSON.stringify(mappingFields.value));
+    formData.append('billing_period', billingPeriod.value);
     $inertia.post(route('import.process'), formData, {
         forceFormData: true,
     });
@@ -206,6 +208,7 @@ const processMapping = () => {
 const canShowProcessButton = computed(() => {
     return (
         servicesFileObj.value !== null &&
+        billingPeriod.value !== '' &&
         Object.values(mappingFields.value).every((field) => field.value !== '')
     );
 });
@@ -263,6 +266,17 @@ const canShowProcessButton = computed(() => {
                                 nahraného CSV na hodnoty ve sloupci popis.
                             </p>
                         </div>
+                    </div>
+                    <div class="mt-6 flex justify-center">
+                        <label class="flex flex-col items-start gap-2 text-sm text-gray-700">
+                            <span>Fakturační období</span>
+                            <input
+                                type="month"
+                                v-model="billingPeriod"
+                                class="rounded border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </label>
                     </div>
                     <!-- Mapování sloupců -->
                     <div v-if="columnsServices.length" class="mt-10">

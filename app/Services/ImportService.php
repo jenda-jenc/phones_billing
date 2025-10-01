@@ -14,13 +14,21 @@ class ImportService
     private array $servicesData;
     private Collection $persons;
     private ?string $sourceFilename;
+    private ?string $billingPeriod;
 
-    public function __construct(array $servicesData, array $mapping, Collection $persons, ?string $sourceFilename = null)
+    public function __construct(
+        array $servicesData,
+        array $mapping,
+        Collection $persons,
+        ?string $sourceFilename = null,
+        ?string $billingPeriod = null
+    )
     {
         $this->servicesData = $servicesData;
         $this->mapping = $mapping;
         $this->persons = $persons;
         $this->sourceFilename = $sourceFilename;
+        $this->billingPeriod = $billingPeriod;
     }
 
     public function process(): array
@@ -189,13 +197,7 @@ class ImportService
             $linesCount += count($personData->sluzby);
         }
 
-        $invoice = Invoice::create([
-            'source_filename' => $this->sourceFilename,
-            'mapping' => $this->mapping,
-            'row_count' => $linesCount,
-            'total_without_vat' => $totalWithoutVat,
-            'total_with_vat' => $totalWithVat,
-        ]);
+        $invoice = $this->upsertInvoice($linesCount, $totalWithoutVat, $totalWithVat);
 
         foreach ($peopleData as $entry) {
             $person = $entry['person'];
@@ -225,6 +227,46 @@ class ImportService
                 ]);
             }
         }
+
+        return $invoice;
+    }
+
+    private function upsertInvoice(int $linesCount, float $totalWithoutVat, float $totalWithVat): Invoice
+    {
+        $data = [
+            'billing_period' => $this->billingPeriod,
+            'source_filename' => $this->sourceFilename,
+            'mapping' => $this->mapping,
+            'row_count' => $linesCount,
+            'total_without_vat' => $totalWithoutVat,
+            'total_with_vat' => $totalWithVat,
+        ];
+
+        if ($this->billingPeriod === null) {
+            return Invoice::create($data);
+        }
+
+        $existingInvoice = Invoice::query()
+            ->where('billing_period', $this->billingPeriod)
+            ->lockForUpdate()
+            ->first();
+
+        if ($existingInvoice !== null) {
+            $existingInvoice->loadMissing('people.lines');
+
+            foreach ($existingInvoice->people as $invoicePerson) {
+                $invoicePerson->lines()->delete();
+            }
+
+            $existingInvoice->people()->delete();
+        }
+
+        $invoice = Invoice::updateOrCreate(
+            ['billing_period' => $this->billingPeriod],
+            $data
+        );
+
+        $invoice->unsetRelation('people');
 
         return $invoice;
     }

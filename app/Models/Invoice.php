@@ -12,6 +12,7 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
+        'billing_period',
         'source_filename',
         'mapping',
         'row_count',
@@ -20,6 +21,7 @@ class Invoice extends Model
     ];
 
     protected $casts = [
+        'billing_period' => 'string',
         'mapping' => 'array',
         'total_without_vat' => 'float',
         'total_with_vat' => 'float',

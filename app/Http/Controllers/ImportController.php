@@ -20,6 +20,7 @@ class ImportController extends Controller
         $request->validate([
             'services' => 'required|file|mimes:csv,txt',
             'mapping'  => 'required|string',
+            'billing_period' => 'required|date_format:Y-m',
         ]);
 
         $mapping = json_decode($request->input('mapping'), true);
@@ -41,7 +42,13 @@ class ImportController extends Controller
 
         $persons = Person::with(['groups.tariffs'])->get();
 
-        $importService = new ImportService($servicesData, $mapping, $persons, $sourceFilename);
+        $importService = new ImportService(
+            $servicesData,
+            $mapping,
+            $persons,
+            $sourceFilename,
+            (string) $request->input('billing_period')
+        );
         $processed = $importService->process();
 
         return inertia('ImportTable', [

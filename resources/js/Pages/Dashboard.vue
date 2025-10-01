@@ -72,6 +72,12 @@ const formatCurrency = (value) => {
                                                 scope="col"
                                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                                             >
+                                                Období
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                            >
                                                 Vytvořeno
                                             </th>
                                             <th
@@ -124,6 +130,15 @@ const formatCurrency = (value) => {
                                             >
                                                 {{
                                                     invoice.source_filename ??
+                                                    '—'
+                                                }}
+                                            </td>
+                                            <td
+                                                class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
+                                            >
+                                                {{
+                                                    invoice.billing_period_label ??
+                                                    invoice.billing_period ??
                                                     '—'
                                                 }}
                                             </td>
