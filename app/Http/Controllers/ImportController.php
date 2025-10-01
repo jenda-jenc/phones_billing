@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Invoice;
 use App\Models\Person;
 use App\Services\ImportService;
 use Illuminate\Http\Request;
@@ -51,9 +52,46 @@ class ImportController extends Controller
         );
         $processed = $importService->process();
 
+        return redirect()
+            ->route('import.show', $processed['invoice_id'])
+            ->with('success', 'Process proběhl v pořádku.');
+    }
+
+    public function show(Invoice $invoice)
+    {
+        $invoice->loadMissing(['people.person', 'people.lines']);
+
+        $importData = [];
+
+        foreach ($invoice->people as $invoicePerson) {
+            $name = optional($invoicePerson->person)->name ?? $invoicePerson->phone;
+            $phone = $invoicePerson->phone;
+
+            $importData[$name][$phone] = [
+                'name' => $name,
+                'phone' => $phone,
+                'limit' => $invoicePerson->limit,
+                'celkem' => round($invoicePerson->total_without_vat, 4),
+                'celkem_s_dph' => round($invoicePerson->total_with_vat, 4),
+                'zaplati' => round($invoicePerson->payable, 2),
+                'invoice_person_id' => $invoicePerson->id,
+                'sluzby' => $invoicePerson->lines
+                    ->map(fn ($line) => [
+                        'skupina' => $line->group_name,
+                        'tarif' => $line->tariff,
+                        'sluzba' => $line->service_name,
+                        'cena' => $line->price_without_vat,
+                        'cena_s_dph' => $line->price_with_vat,
+                    ])
+                    ->values()
+                    ->all(),
+                'aplikovana_pravidla' => $invoicePerson->applied_rules ?? [],
+            ];
+        }
+
         return inertia('ImportTable', [
-            'importData' => $processed['data'],
-            'invoiceId' => $processed['invoice_id'],
-        ])->with('success', 'Process proběhl v pořádku.');
+            'importData' => $importData,
+            'invoiceId' => $invoice->id,
+        ]);
     }
 }
