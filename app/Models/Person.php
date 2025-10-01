@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Notifications\Notifiable;
 
 class Person extends Model
@@ -36,5 +37,10 @@ class Person extends Model
     public function invoiceLines()
     {
         return $this->hasMany(InvoiceLine::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'person_user')->withTimestamps();
     }
 }

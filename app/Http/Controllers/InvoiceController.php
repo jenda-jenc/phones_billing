@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InvoiceBreakdownMail;
 use App\Models\Invoice;
 use App\Models\InvoicePerson;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -24,6 +27,7 @@ class InvoiceController extends Controller
         $paginator = Invoice::query()
             ->with([
                 'people.person.groups',
+                'people.person.users',
                 'people.lines' => fn ($query) => $query
                     ->select('id', 'invoice_person_id', 'price_without_vat', 'price_with_vat'),
             ])
@@ -74,6 +78,40 @@ class InvoiceController extends Controller
         ]);
     }
 
+    public function show(Request $request, InvoicePerson $invoicePerson): InertiaResponse
+    {
+        $this->authorize('view', $invoicePerson);
+
+        $invoicePerson->loadMissing(['invoice', 'person.groups', 'lines']);
+
+        return Inertia::render('Invoices/Show', [
+            'invoicePerson' => $this->transformInvoicePerson($invoicePerson),
+        ]);
+    }
+
+    public function email(Request $request, InvoicePerson $invoicePerson): JsonResponse
+    {
+        $this->authorize('email', $invoicePerson);
+
+        $invoicePerson->loadMissing(['invoice', 'person.users', 'lines']);
+
+        $recipient = optional($invoicePerson->person)
+            ?->users
+            ->first();
+
+        if (! $recipient) {
+            return response()->json([
+                'message' => 'K této osobě není přiřazen žádný uživatel.',
+            ], 422);
+        }
+
+        Mail::to($recipient->email)->queue(new InvoiceBreakdownMail($invoicePerson));
+
+        return response()->json([
+            'message' => 'E-mail s vyúčtováním byl odeslán.',
+        ]);
+    }
+
     private function transformInvoiceForUser(Invoice $invoice, ?User $user): array
     {
         $people = $this->filterPeopleForRole($invoice->people, data_get($user, 'role'));
@@ -82,6 +120,24 @@ class InvoiceController extends Controller
             fn (int $carry, InvoicePerson $invoicePerson) => $carry + $invoicePerson->lines->count(),
             0
         );
+
+        $detailUrl = null;
+
+        if ($user !== null) {
+            $matchingPerson = $people->first(function (InvoicePerson $invoicePerson) use ($user) {
+                $person = $invoicePerson->person;
+
+                if ($person === null) {
+                    return false;
+                }
+
+                return $person->users->contains(fn ($relatedUser) => (int) $relatedUser->id === (int) $user->id);
+            });
+
+            if ($matchingPerson !== null) {
+                $detailUrl = route('invoices.show', ['invoicePerson' => $matchingPerson->id]);
+            }
+        }
 
         return [
             'id' => $invoice->id,
@@ -100,6 +156,50 @@ class InvoiceController extends Controller
                 'csv' => route('invoices.download', ['invoice' => $invoice->id, 'format' => 'csv']),
                 'pdf' => route('invoices.download', ['invoice' => $invoice->id, 'format' => 'pdf']),
             ],
+            'detail_url' => $detailUrl,
+        ];
+    }
+
+    private function transformInvoicePerson(InvoicePerson $invoicePerson): array
+    {
+        $person = $invoicePerson->person;
+        $invoice = $invoicePerson->invoice;
+
+        return [
+            'id' => $invoicePerson->id,
+            'phone' => $invoicePerson->phone,
+            'vat_rate' => $invoicePerson->vat_rate,
+            'total_without_vat' => round((float) $invoicePerson->total_without_vat, 2),
+            'total_with_vat' => round((float) $invoicePerson->total_with_vat, 2),
+            'limit' => round((float) $invoicePerson->limit, 2),
+            'payable' => round((float) $invoicePerson->payable, 2),
+            'applied_rules' => $invoicePerson->applied_rules ?? [],
+            'person' => $person ? [
+                'id' => $person->id,
+                'name' => $person->name,
+                'department' => $person->department,
+                'limit' => round((float) $person->limit, 2),
+                'groups' => $person->groups
+                    ->map(fn ($group) => [
+                        'id' => $group->id,
+                        'name' => $group->name,
+                        'value' => $group->value,
+                    ])->all(),
+            ] : null,
+            'invoice' => $invoice ? [
+                'id' => $invoice->id,
+                'source_filename' => $invoice->source_filename,
+                'created_at' => optional($invoice->created_at)->toDateTimeString(),
+            ] : null,
+            'lines' => $invoicePerson->lines
+                ->map(fn ($line) => [
+                    'id' => $line->id,
+                    'group_name' => $line->group_name,
+                    'tariff' => $line->tariff,
+                    'service_name' => $line->service_name,
+                    'price_without_vat' => round((float) $line->price_without_vat, 2),
+                    'price_with_vat' => round((float) $line->price_with_vat, 2),
+                ])->all(),
         ];
     }
 

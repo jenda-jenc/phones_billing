@@ -34,7 +34,7 @@ class ImportService
 
         return [
             'invoice_id' => $invoice->id,
-            'data' => $calculation['response'],
+            'data' => $this->formatResponse($calculation['response']),
         ];
     }
 
@@ -150,7 +150,7 @@ class ImportService
             if (!isset($mapped[$person->name])) {
                 $mapped[$person->name] = [];
             }
-            $mapped[$person->name][$phone] = $personData->toArray();
+            $mapped[$person->name][$phone] = $personData;
 
             $peopleForPersistence[] = [
                 'person' => $person,
@@ -212,6 +212,8 @@ class ImportService
                 'applied_rules' => $personData->aplikovanaPravidla ?: null,
             ]);
 
+            $personData->invoice_person_id = $invoicePerson->id;
+
             foreach ($personData->sluzby as $service) {
                 $invoicePerson->lines()->create([
                     'person_id' => $person->id,
@@ -225,5 +227,27 @@ class ImportService
         }
 
         return $invoice;
+    }
+
+    /**
+     * @param array<string, array<string, ImportedPersonData>> $response
+     */
+    private function formatResponse(array $response): array
+    {
+        $formatted = [];
+
+        foreach ($response as $name => $phones) {
+            foreach ($phones as $phone => $personData) {
+                if ($personData instanceof ImportedPersonData) {
+                    $formatted[$name][$phone] = $personData->toArray();
+
+                    continue;
+                }
+
+                $formatted[$name][$phone] = $personData;
+            }
+        }
+
+        return $formatted;
     }
 }
