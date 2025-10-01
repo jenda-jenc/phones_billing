@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -123,6 +124,7 @@ class InvoiceController extends Controller
             0
         );
 
+        $peopleLinks = [];
         $detailUrl = null;
 
         if ($user !== null) {
@@ -138,6 +140,26 @@ class InvoiceController extends Controller
 
             if ($matchingPerson !== null) {
                 $detailUrl = route('invoices.show', ['invoicePerson' => $matchingPerson->id]);
+            }
+
+            if (Gate::forUser($user)->allows('viewAny', InvoicePerson::class)) {
+                $peopleLinks = $invoice->people
+                    ->map(function (InvoicePerson $invoicePerson) {
+                        $person = $invoicePerson->person;
+                        $name = optional($person)->name;
+
+                        if (empty($name)) {
+                            $name = $invoicePerson->phone ?: sprintf('Osoba #%d', $invoicePerson->id);
+                        }
+
+                        return [
+                            'id' => $invoicePerson->id,
+                            'name' => $name,
+                            'detail_url' => route('invoices.show', ['invoicePerson' => $invoicePerson->id]),
+                        ];
+                    })
+                    ->values()
+                    ->all();
             }
         }
 
@@ -161,6 +183,7 @@ class InvoiceController extends Controller
                 'pdf' => route('invoices.download', ['invoice' => $invoice->id, 'format' => 'pdf']),
             ],
             'detail_url' => $detailUrl,
+            'people_links' => $peopleLinks,
         ];
     }
 
