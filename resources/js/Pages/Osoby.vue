@@ -1,0 +1,177 @@
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, usePage, router } from '@inertiajs/vue3';
+import { reactive, ref } from 'vue';
+import PersonForm from '../Components/PersonForm.vue';
+import PersonTable from '../Components/PersonTable.vue';
+
+const personFormRef = ref(null);
+const showForm = ref(false);
+const isEditing = ref(false);
+const formData = reactive({
+    id: null,
+    name: '',
+    phone: '',
+    department: '',
+    limit: 450,
+});
+
+// Pro přiřazování skupin
+const showGroupAssign = ref(false);
+const assignPerson = ref(null);
+const assignGroupId = ref('');
+
+
+// Potvrdí přiřazení skupiny (PATCH požadavek na správnou routu)
+const confirmAssignGroup = async () => {
+    if (!assignPerson.value || !assignGroupId.value) return;
+    await router.patch(
+        route('persons.assignGroup', assignPerson.value.id),
+        { group_id: assignGroupId.value },
+        {
+            onSuccess: () => {
+                showGroupAssign.value = false;
+                assignPerson.value = null;
+                assignGroupId.value = '';
+            }
+        }
+    );
+};
+
+// Otevře/zavře form – pokud form už běží, zruší i editaci a vynuluje data
+const toggleForm = () => {
+    if (showForm.value) {
+        // Zavírám form, vždy zruš editaci i data
+        resetForm();
+    } else {
+        // Otevírám nový form, vynuluj vše
+        resetForm();
+        showForm.value = true;
+        setTimeout(() => {
+            personFormRef.value?.$el.querySelector('input')?.focus();
+        }, 0);
+    }
+};
+
+const resetForm = () => {
+    formData.id = null;
+    formData.name = '';
+    formData.phone = '';
+    formData.department = '';
+    formData.limit = 450;
+    isEditing.value = false;
+    showForm.value = false;
+};
+
+const handleFormSubmit = async (data) => {
+    if (isEditing.value) {
+        await router.put(route('persons.update', data.id), data, {
+            onSuccess: resetForm,
+        });
+    } else {
+        await router.post(route('persons.store'), data, {
+            onSuccess: resetForm,
+        });
+    }
+};
+
+// Otevře výběr skupiny pro konkrétní osobu
+const attachGroup = (person) => {
+    assignPerson.value = person;
+    assignGroupId.value = '';
+    showGroupAssign.value = true;
+    setTimeout(() => {
+        personFormRef.value?.$el.querySelector('select')?.focus();
+        window.scrollTo({
+            top: 0, // Vyjet na začátek stránky
+            behavior: 'smooth', // Plynulý přechod
+        });
+    }, 0);
+};
+const editPerson = (person) => {
+    Object.assign(formData, person);
+    isEditing.value = true;
+    showForm.value = true;
+    setTimeout(() => {
+        personFormRef.value?.$el.querySelector('input')?.focus();
+    }, 0);
+};
+
+const deletePerson = async (id) => {
+    if (confirm('Opravdu chcete tuto osobu smazat?')) {
+        await router.delete(route('persons.destroy', id));
+    }
+};
+</script>
+
+<template>
+    <Head title="Seznam Osob"/>
+
+    <AuthenticatedLayout>
+        <template #header>
+            <h2 class="text-2xl font-bold leading-tight text-gray-800">
+                Seznam Osob
+            </h2>
+        </template>
+
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
+
+                <div class="flex justify-end">
+                    <button
+                        class="bg-blue-500 text-white px-6 py-3 rounded shadow hover:shadow-md hover:bg-blue-600 transition-all duration-150 flex items-center space-x-2"
+                        @click="toggleForm"
+                    >
+                        <svg v-if="!showForm" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        <span>{{ showForm ? 'Zavřít' : 'Nová osoba' }}</span>
+                    </button>
+                </div>
+
+                <div v-if="showForm" class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        {{ isEditing ? 'Upravit osobu' : 'Přidat novou osobu' }}
+                    </h3>
+                    <PersonForm
+                        ref="personFormRef"
+                        :initialData="formData"
+                        :errors="usePage().props.errors"
+                        :isEditing="isEditing"
+                        @submit="handleFormSubmit"
+                    />
+                </div>
+
+                <!-- Inline assign group select -->
+                <div v-if="showGroupAssign" class="my-6 bg-blue-50 rounded-lg p-4 border border-blue-200 flex items-center gap-4">
+                    <span>Přiřadit skupinu osobě <b>{{ assignPerson?.name }}({{ assignPerson?.phone }})</b>:</span>
+                    <select v-model="assignGroupId" class="border p-2 px-8 rounded ">
+                        <option class="" value="" disabled>Vyberte skupinu</option>
+                        <option v-for="group in usePage().props.groups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                    </select>
+                    <button @click="confirmAssignGroup" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" :disabled="!assignGroupId">
+                        Přiřadit
+                    </button>
+                    <button @click="showGroupAssign = false" class="bg-red-600 hover:bg-red-500 text-white hover:text-red-900 px-4 py-2 rounded">Zrušit</button>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Seznam osob</h3>
+                    <PersonTable
+                        :people="usePage().props.people"
+                        :groups="usePage().props.groups"
+                        @edit="editPerson"
+                        @delete="deletePerson"
+                        @attach-group="attachGroup"
+                    />
+                </div>
+            </div>
+        </div>
+    </AuthenticatedLayout>
+</template>
