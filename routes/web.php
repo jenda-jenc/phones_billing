@@ -4,6 +4,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\InvoiceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -16,9 +17,14 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [InvoiceController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+
+Route::get('/invoices/{invoice}/download/{format}', [InvoiceController::class, 'download'])
+    ->whereIn('format', ['csv', 'pdf'])
+    ->middleware(['auth', 'verified'])
+    ->name('invoices.download');
 
 Route::get('/import', [ImportController::class, 'index'])->middleware(['auth', 'verified'])->name('import');
 Route::post('/import/process', [ImportController::class, 'processImport'])->middleware(['auth', 'verified'])->name('import.process');
