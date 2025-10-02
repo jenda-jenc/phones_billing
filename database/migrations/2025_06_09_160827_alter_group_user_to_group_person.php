@@ -15,8 +15,13 @@ class AlterGroupUserToGroupPerson extends Migration
 
         // 2. Drop původní foreign keys
         Schema::table('group_person', function (Blueprint $table) {
-            try { $table->dropForeign('group_user_user_id_foreign'); } catch (\Throwable $e) {}
-            try { $table->dropForeign('group_user_group_id_foreign'); } catch (\Throwable $e) {}
+            if (Schema::hasColumn('group_person', 'user_id')) {
+                $table->dropForeign(['user_id']);
+            }
+
+            if (Schema::hasColumn('group_person', 'group_id')) {
+                $table->dropForeign(['group_id']);
+            }
         });
 
         // 3. Přejmenuj sloupec user_id na person_id

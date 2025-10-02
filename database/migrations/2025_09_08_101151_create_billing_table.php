@@ -34,7 +34,7 @@ return new class extends Migration
             $table->json('applied_rules')->nullable();
             $table->timestamps();
 
-            $table->unique(['invoice_id', 'person_id']);
+            $table->unique(['invoice_id', 'person_id', 'phone']);
         });
 
         Schema::create('invoice_lines', function (Blueprint $table) {
