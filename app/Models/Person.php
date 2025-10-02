@@ -20,11 +20,6 @@ class Person extends Model
     protected $fillable = [
         'name',
         'department',
-        'limit',
-    ];
-
-    protected $casts = [
-        'limit' => 'float',
     ];
 
     public function phones(): HasMany

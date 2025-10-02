@@ -120,7 +120,7 @@ class ImportService
                 $vat = $entry['vat'];
                 $personData->name = $person->name;
                 $personData->phone = $phone;
-                $personData->limit = (float)$person->limit;
+                $personData->limit = (float) ($personPhone->limit ?? 0);
                 $personData->vat = $vat;
 
                 $platiSam = 0.0;
