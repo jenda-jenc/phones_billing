@@ -8,12 +8,17 @@ import PersonTable from '../Components/PersonTable.vue';
 const personFormRef = ref(null);
 const showForm = ref(false);
 const isEditing = ref(false);
+const DEFAULT_PHONE_LIMIT = 450;
 const formData = reactive({
     id: null,
     name: '',
-    phones: [''],
+    phones: [
+        {
+            phone: '',
+            limit: DEFAULT_PHONE_LIMIT,
+        },
+    ],
     department: '',
-    limit: 450,
 });
 
 // Pro přiřazování skupin
@@ -55,9 +60,13 @@ const toggleForm = () => {
 const resetForm = () => {
     formData.id = null;
     formData.name = '';
-    formData.phones = [''];
+    formData.phones = [
+        {
+            phone: '',
+            limit: DEFAULT_PHONE_LIMIT,
+        },
+    ];
     formData.department = '';
-    formData.limit = 450;
     isEditing.value = false;
     showForm.value = false;
 };
@@ -114,9 +123,31 @@ const editPerson = (person) => {
     formData.id = person.id;
     formData.name = person.name;
     formData.department = person.department;
-    formData.limit = person.limit;
-    const phones = extractPhones(person);
-    formData.phones = phones.length ? phones : [''];
+    const phones = Array.isArray(person.phones)
+        ? person.phones
+              .map((entry) => ({
+                  phone:
+                      entry && typeof entry === 'object'
+                          ? entry.phone ?? ''
+                          : typeof entry === 'string'
+                            ? entry
+                            : '',
+                  limit:
+                      entry && typeof entry === 'object'
+                          ? entry.limit ?? DEFAULT_PHONE_LIMIT
+                          : DEFAULT_PHONE_LIMIT,
+              }))
+              .filter((entry) => entry.phone !== '')
+        : [];
+
+    formData.phones = phones.length
+        ? phones
+        : [
+              {
+                  phone: '',
+                  limit: DEFAULT_PHONE_LIMIT,
+              },
+          ];
     isEditing.value = true;
     showForm.value = true;
     setTimeout(() => {

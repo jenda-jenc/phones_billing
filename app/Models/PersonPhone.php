@@ -12,6 +12,11 @@ class PersonPhone extends Model
 
     protected $fillable = [
         'phone',
+        'limit',
+    ];
+
+    protected $casts = [
+        'limit' => 'float',
     ];
 
     public function person(): BelongsTo

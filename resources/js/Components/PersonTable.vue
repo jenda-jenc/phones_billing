@@ -25,17 +25,49 @@ const extractPhones = (person) => {
 
     return person.phones
         .map((entry) => {
-            if (typeof entry === 'string') {
-                return entry;
-            }
-
             if (entry && typeof entry === 'object') {
-                return entry.phone ?? '';
+                return {
+                    phone: entry.phone ?? '',
+                    limit: entry.limit ?? null,
+                };
             }
 
-            return '';
+            if (typeof entry === 'string') {
+                return {
+                    phone: entry,
+                    limit: null,
+                };
+            }
+
+            return {
+                phone: '',
+                limit: null,
+            };
         })
-        .filter((phone) => phone !== '');
+        .filter((entry) => entry.phone !== '');
+};
+
+const formatLimit = (limit) => {
+    if (limit === null || limit === undefined || limit === '') {
+        return '—';
+    }
+
+    const number = Number(limit);
+
+    if (!Number.isFinite(number)) {
+        return '—';
+    }
+
+    return number.toLocaleString('cs-CZ', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+};
+
+const formatLimitWithCurrency = (limit) => {
+    const formatted = formatLimit(limit);
+
+    return formatted === '—' ? formatted : `${formatted} Kč`;
 };
 
 const filteredPeople = computed(() => {
@@ -47,8 +79,8 @@ const filteredPeople = computed(() => {
         );
     } else if (searchBy.value === 'phone') {
         return props.people.filter((person) =>
-            extractPhones(person).some((phone) =>
-                phone.toLowerCase().includes(query),
+            extractPhones(person).some((entry) =>
+                entry.phone.toLowerCase().includes(query),
             ),
         );
     } else if (searchBy.value === 'department') {
@@ -163,7 +195,6 @@ const removeGroup = async (personId, groupId) => {
                     <th class="px-4 py-2 text-left">Jméno</th>
                     <th class="px-4 py-2 text-left">Telefonní čísla</th>
                     <th class="px-4 py-2 text-left">Pracovní útvar</th>
-                    <th class="px-4 py-2 text-left">Limit</th>
                     <th class="px-4 py-2 text-left">Skupiny</th>
                     <th class="px-4 py-2 text-center">Akce</th>
                 </tr>
@@ -177,18 +208,24 @@ const removeGroup = async (personId, groupId) => {
                     <td class="border-b px-4 py-2">{{ person.name }}</td>
                     <td class="border-b px-4 py-2">
                         <template v-if="extractPhones(person).length">
-                            <span
-                                v-for="phone in extractPhones(person)"
-                                :key="phone"
-                                class="mr-2 inline-flex rounded bg-blue-100 px-2 py-1 text-sm text-blue-700"
+                            <div
+                                v-for="entry in extractPhones(person)"
+                                :key="entry.phone"
+                                class="mb-1 flex flex-wrap items-center gap-2"
                             >
-                                {{ phone }}
-                            </span>
+                                <span
+                                    class="inline-flex items-center rounded bg-blue-100 px-2 py-1 text-sm font-medium text-blue-700"
+                                >
+                                    {{ entry.phone }}
+                                </span>
+                                <span class="text-sm text-gray-600">
+                                    Limit: {{ formatLimitWithCurrency(entry.limit) }}
+                                </span>
+                            </div>
                         </template>
                         <span v-else class="text-gray-400">Žádné číslo</span>
                     </td>
                     <td class="border-b px-4 py-2">{{ person.department }}</td>
-                    <td class="border-b px-4 py-2">{{ person.limit }}</td>
                     <td class="border-b px-4 py-2">
                         <span v-if="person.groups && person.groups.length">
                             <span

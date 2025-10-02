@@ -3,9 +3,9 @@
         <form @submit.prevent="handleSubmit">
             <!-- Jméno -->
             <div class="mb-4">
-                <label for="name" class="mb-2 block font-semibold text-gray-700"
-                    >Jméno</label
-                >
+                <label for="name" class="mb-2 block font-semibold text-gray-700">
+                    Jméno
+                </label>
                 <input
                     id="name"
                     type="text"
@@ -23,26 +23,71 @@
                 <label class="mb-2 block font-semibold text-gray-700">
                     Telefonní čísla
                 </label>
+
                 <div
                     v-for="(phone, index) in formData.phones"
                     :key="`phone-${index}`"
-                    class="mb-2 flex items-start gap-2"
+                    class="mb-3 rounded-lg border border-gray-200 bg-white p-3"
                 >
-                    <input
-                        :id="`phone-${index}`"
-                        type="tel"
-                        v-model="formData.phones[index]"
-                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
-                        placeholder="Zadejte telefonní číslo"
-                    />
-                    <button
-                        type="button"
-                        class="rounded bg-red-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
-                        @click="removePhone(index)"
-                    >
-                        Odebrat
-                    </button>
+                    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,220px)_auto] sm:items-end">
+                        <div class="flex flex-col">
+                            <label
+                                :for="`phone-number-${index}`"
+                                class="mb-1 text-sm font-semibold text-gray-600"
+                            >
+                                Telefonní číslo
+                            </label>
+                            <input
+                                :id="`phone-number-${index}`"
+                                type="tel"
+                                v-model="formData.phones[index].phone"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                placeholder="Zadejte telefonní číslo"
+                            />
+                            <p
+                                v-if="phoneError(index, 'phone')"
+                                class="mt-1 text-sm text-red-500"
+                            >
+                                {{ phoneError(index, 'phone') }}
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <label
+                                :for="`phone-limit-${index}`"
+                                class="mb-1 text-sm font-semibold text-gray-600"
+                            >
+                                Limit
+                            </label>
+                            <input
+                                :id="`phone-limit-${index}`"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                v-model="formData.phones[index].limit"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                placeholder="Zadejte limit"
+                            />
+                            <p
+                                v-if="phoneError(index, 'limit')"
+                                class="mt-1 text-sm text-red-500"
+                            >
+                                {{ phoneError(index, 'limit') }}
+                            </p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button
+                                type="button"
+                                class="rounded bg-red-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+                                @click="removePhone(index)"
+                            >
+                                Odebrat
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
                 <button
                     type="button"
                     class="rounded bg-green-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-600"
@@ -53,14 +98,6 @@
                 <p v-if="errors.phones" class="mt-2 text-sm text-red-500">
                     {{ errors.phones }}
                 </p>
-                <template v-for="(phone, index) in formData.phones" :key="`error-${index}`">
-                    <p
-                        v-if="errors[`phones.${index}`]"
-                        class="mt-1 text-sm text-red-500"
-                    >
-                        {{ errors[`phones.${index}`] }}
-                    </p>
-                </template>
             </div>
 
             <!-- Pracovní útvar -->
@@ -68,8 +105,9 @@
                 <label
                     for="department"
                     class="mb-2 block font-semibold text-gray-700"
-                    >Pracovní útvar</label
                 >
+                    Pracovní útvar
+                </label>
                 <input
                     id="department"
                     type="text"
@@ -79,26 +117,6 @@
                 />
                 <p v-if="errors.department" class="mt-1 text-sm text-red-500">
                     {{ errors.department }}
-                </p>
-            </div>
-
-            <!-- Limit -->
-            <div class="mb-4">
-                <label
-                    for="limit"
-                    class="mb-2 block font-semibold text-gray-700"
-                    >Limit</label
-                >
-                <input
-                    id="limit"
-                    type="number"
-                    step="0.1"
-                    v-model="formData.limit"
-                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    placeholder="Zadejte limit"
-                />
-                <p v-if="errors.limit" class="mt-1 text-sm text-red-500">
-                    {{ errors.limit }}
                 </p>
             </div>
 
@@ -116,16 +134,22 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, computed } from 'vue';
+
+const DEFAULT_PHONE_LIMIT = '450';
 
 const props = defineProps({
     initialData: {
         type: Object,
         default: () => ({
             name: '',
-            phones: [''],
+            phones: [
+                {
+                    phone: '',
+                    limit: DEFAULT_PHONE_LIMIT,
+                },
+            ],
             department: '',
-            limit: 450,
         }),
     },
     errors: {
@@ -138,45 +162,70 @@ const props = defineProps({
     },
 });
 
+const errors = computed(() => props.errors ?? {});
+
 const emit = defineEmits(['submit']);
 
 const formData = reactive({
     id: null,
     name: '',
-    phones: [''],
+    phones: [createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT)],
     department: '',
-    limit: 450,
+});
+
+const formatLimit = (value, fallback = '') => {
+    if (value === null || value === undefined || value === '') {
+        return fallback;
+    }
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? String(value) : fallback;
+    }
+
+    if (typeof value === 'string') {
+        const normalized = value.replace(',', '.');
+        return Number.isFinite(Number(normalized)) ? normalized : fallback;
+    }
+
+    return fallback;
+};
+
+const createPhoneEntry = (phone = '', limit = '', fallback = '') => ({
+    phone: typeof phone === 'string' ? phone : '',
+    limit: formatLimit(limit, fallback),
 });
 
 const normalizePhones = (phones) => {
     if (!Array.isArray(phones) || phones.length === 0) {
-        return [''];
+        return [createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT)];
     }
 
-    const values = phones.map((entry) => {
-        if (typeof entry === 'object' && entry !== null) {
-            return entry.phone ?? '';
-        }
+    const normalized = phones
+        .map((entry) => {
+            if (entry && typeof entry === 'object') {
+                return createPhoneEntry(entry.phone ?? '', entry.limit ?? '', '');
+            }
 
-        return typeof entry === 'string' ? entry : '';
-    });
+            if (typeof entry === 'string') {
+                return createPhoneEntry(entry, '', '');
+            }
 
-    return values.length ? values : [''];
+            return createPhoneEntry('', '', '');
+        })
+        .filter((entry) => entry.phone !== '');
+
+    return normalized.length
+        ? normalized
+        : [createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT)];
 };
 
 const setFormData = (data) => {
     formData.id = data?.id ?? null;
     formData.name = data?.name ?? '';
     formData.department = data?.department ?? '';
-    formData.limit = data?.limit ?? 450;
 
-    const phones = normalizePhones(data?.phones ?? ['']);
-
+    const phones = normalizePhones(data?.phones ?? []);
     formData.phones.splice(0, formData.phones.length, ...phones);
-
-    if (formData.phones.length === 0) {
-        formData.phones.push('');
-    }
 };
 
 setFormData(props.initialData);
@@ -190,16 +239,46 @@ watch(
 );
 
 const addPhone = () => {
-    formData.phones.push('');
+    formData.phones.push(createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT));
 };
 
 const removePhone = (index) => {
     if (formData.phones.length === 1) {
-        formData.phones.splice(0, 1, '');
+        formData.phones.splice(
+            0,
+            1,
+            createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT),
+        );
         return;
     }
 
     formData.phones.splice(index, 1);
+};
+
+const parseLimit = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const normalized = typeof value === 'string' ? value.replace(',', '.') : value;
+    const number = Number(normalized);
+
+    if (!Number.isFinite(number)) {
+        return null;
+    }
+
+    return Math.round(number * 100) / 100;
+};
+
+const phoneError = (index, field) => {
+    const currentErrors = errors.value;
+    const baseKey = `phones.${index}`;
+
+    return (
+        currentErrors[`${baseKey}.${field}`] ??
+        currentErrors[baseKey] ??
+        null
+    );
 };
 
 const handleSubmit = () => {
@@ -207,10 +286,12 @@ const handleSubmit = () => {
         id: formData.id,
         name: formData.name,
         department: formData.department,
-        limit: formData.limit,
         phones: formData.phones
-            .map((phone) => (typeof phone === 'string' ? phone.trim() : ''))
-            .filter((phone) => phone !== ''),
+            .map((entry) => ({
+                phone: typeof entry.phone === 'string' ? entry.phone.trim() : '',
+                limit: parseLimit(entry.limit),
+            }))
+            .filter((entry) => entry.phone !== ''),
     };
 
     emit('submit', payload);

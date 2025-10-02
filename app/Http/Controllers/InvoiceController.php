@@ -29,6 +29,7 @@ class InvoiceController extends Controller
         $paginator = Invoice::query()
             ->with([
                 'people.person.groups',
+                'people.person.phones',
                 'people.person.users',
                 'people.lines' => fn ($query) => $query
                     ->select('id', 'invoice_person_id', 'price_without_vat', 'price_with_vat'),
@@ -54,7 +55,7 @@ class InvoiceController extends Controller
 
         abort_unless(in_array($format, ['csv', 'pdf'], true), 404);
 
-        $invoice->loadMissing(['people.person.groups', 'people.lines']);
+        $invoice->loadMissing(['people.person.groups', 'people.person.phones', 'people.lines']);
 
         /** @var User|null $user */
         $user = $request->user();
@@ -85,7 +86,7 @@ class InvoiceController extends Controller
     {
         $this->authorize('view', $invoicePerson);
 
-        $invoicePerson->loadMissing(['invoice', 'person.groups', 'lines']);
+        $invoicePerson->loadMissing(['invoice', 'person.groups', 'person.phones', 'lines']);
 
         return Inertia::render('Invoices/Show', [
             'invoicePerson' => $this->transformInvoicePerson($invoicePerson),
@@ -205,7 +206,14 @@ class InvoiceController extends Controller
                 'id' => $person->id,
                 'name' => $person->name,
                 'department' => $person->department,
-                'limit' => round((float) $person->limit, 2),
+                'phones' => $person->phones
+                    ->map(fn ($phone) => [
+                        'id' => $phone->id,
+                        'phone' => $phone->phone,
+                        'limit' => $phone->limit !== null
+                            ? round((float) $phone->limit, 2)
+                            : null,
+                    ])->all(),
                 'groups' => $person->groups
                     ->map(fn ($group) => [
                         'id' => $group->id,

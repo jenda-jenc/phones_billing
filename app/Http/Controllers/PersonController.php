@@ -32,7 +32,6 @@ class PersonController extends Controller
             $person = Person::create([
                 'name' => $validated['name'],
                 'department' => $validated['department'],
-                'limit' => $validated['limit'],
             ]);
 
             $this->syncPhones($person, $validated['phones']);
@@ -51,7 +50,6 @@ class PersonController extends Controller
             $person->update([
                 'name' => $validated['name'],
                 'department' => $validated['department'],
-                'limit' => $validated['limit'],
             ]);
 
             $this->syncPhones($person, $validated['phones']);
@@ -100,31 +98,78 @@ class PersonController extends Controller
     private function preparePhones(array $phones): array
     {
         return collect($phones)
-            ->map(fn ($phone) => is_string($phone) ? trim($phone) : '')
-            ->filter(fn ($phone) => $phone !== '')
+            ->map(function ($phone) {
+                if (is_array($phone)) {
+                    $number = isset($phone['phone']) ? trim((string) $phone['phone']) : '';
+
+                    return [
+                        'phone' => $number,
+                        'limit' => $this->normalizeLimit($phone['limit'] ?? null),
+                    ];
+                }
+
+                if (is_string($phone)) {
+                    return [
+                        'phone' => trim($phone),
+                        'limit' => null,
+                    ];
+                }
+
+                return [
+                    'phone' => '',
+                    'limit' => null,
+                ];
+            })
+            ->filter(fn ($phone) => $phone['phone'] !== '')
             ->values()
             ->all();
     }
 
     private function syncPhones(Person $person, array $phones): void
     {
-        $existing = $person->phones()->get()->mapWithKeys(
-            fn ($phoneModel) => [$phoneModel->phone => $phoneModel]
-        );
+        $incoming = collect($phones)
+            ->map(fn ($phone) => [
+                'phone' => $phone['phone'],
+                'limit' => round((float) ($phone['limit'] ?? 0), 2),
+            ])
+            ->keyBy('phone');
 
-        $incoming = collect($phones);
-
-        $toDelete = $existing->keys()->diff($incoming);
+        $existingPhones = $person->phones()->pluck('phone');
+        $toDelete = $existingPhones->diff($incoming->keys());
 
         if ($toDelete->isNotEmpty()) {
             $person->phones()->whereIn('phone', $toDelete->all())->delete();
         }
 
-        $toCreate = $incoming->diff($existing->keys());
-
-        foreach ($toCreate as $phone) {
-            $person->phones()->create(['phone' => $phone]);
+        foreach ($incoming as $phoneData) {
+            $person->phones()->updateOrCreate(
+                ['phone' => $phoneData['phone']],
+                ['limit' => $phoneData['limit']]
+            );
         }
+    }
+
+    private function normalizeLimit(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $normalized = str_replace(',', '.', $value);
+
+            if (! is_numeric($normalized)) {
+                return null;
+            }
+
+            return (float) $normalized;
+        }
+
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        return null;
     }
 
     private function rules(?Person $person = null): array
@@ -132,39 +177,42 @@ class PersonController extends Controller
         $uniqueRule = Rule::unique('person_phones', 'phone');
 
         if ($person) {
-            $uniqueRule = $uniqueRule->ignore($person->id, 'person_id');
+            $uniqueRule = $uniqueRule->where(fn ($query) => $query->where('person_id', '!=', $person->id));
         }
 
         return [
             'name' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
             'phones' => 'required|array|min:1',
-            'phones.*' => [
+            'phones.*' => 'required|array:phone,limit',
+            'phones.*.phone' => [
                 'required',
                 'string',
                 'max:15',
                 'distinct',
                 $uniqueRule,
             ],
-            'department' => 'required|string|max:255',
-            'limit' => 'required|numeric|between:0,999999.99',
+            'phones.*.limit' => 'required|numeric|between:0,999999.99',
         ];
     }
 
     private function messages(): array
     {
         return [
-            'name.required'       => 'Prosím, vyplňte jméno.',
-            'phones.required'     => 'Prosím, zadejte alespoň jedno telefonní číslo.',
-            'phones.min'          => 'Prosím, zadejte alespoň jedno telefonní číslo.',
-            'phones.array'        => 'Telefonní čísla musí být ve správném formátu.',
-            'phones.*.required'   => 'Telefonní číslo je povinné.',
-            'phones.*.distinct'   => 'Telefonní čísla se musí lišit.',
-            'phones.*.unique'     => 'Zadané telefonní číslo již existuje.',
-            'phones.*.max'        => 'Telefonní číslo nesmí být delší než 15 znaků.',
-            'department.required' => 'Prosím, uveďte pracovní útvar.',
-            'limit.required'      => 'Limit je povinná hodnota.',
-            'limit.numeric'       => 'Limit musí být číslo.',
-            'limit.between'       => 'Limit musí být mezi 0 a 999999.99.',
+            'name.required'              => 'Prosím, vyplňte jméno.',
+            'phones.required'            => 'Prosím, zadejte alespoň jedno telefonní číslo.',
+            'phones.min'                 => 'Prosím, zadejte alespoň jedno telefonní číslo.',
+            'phones.array'               => 'Telefonní čísla musí být ve správném formátu.',
+            'phones.*.required'          => 'Telefonní číslo je povinné.',
+            'phones.*.array'             => 'Telefonní číslo musí obsahovat hodnotu čísla i limitu.',
+            'phones.*.phone.required'    => 'Telefonní číslo je povinné.',
+            'phones.*.phone.distinct'    => 'Telefonní čísla se musí lišit.',
+            'phones.*.phone.unique'      => 'Zadané telefonní číslo již existuje.',
+            'phones.*.phone.max'         => 'Telefonní číslo nesmí být delší než 15 znaků.',
+            'phones.*.limit.required'    => 'Limit je povinná hodnota.',
+            'phones.*.limit.numeric'     => 'Limit musí být číslo.',
+            'phones.*.limit.between'     => 'Limit musí být mezi 0 a 999999.99.',
+            'department.required'        => 'Prosím, uveďte pracovní útvar.',
         ];
     }
 }
