@@ -35,16 +35,15 @@ return new class extends Migration
 
                 $table->unique(['group_id', 'person_id'], 'group_person_group_id_person_id_unique');
             });
+        } else {
+            // tabulka už existovala → dorovnání schématu
+            $this->ensureGroupPersonSchema();
         }
-
-        $this->ensureGroupPersonSchema();
 
         if (Schema::hasTable('group_user')) {
             $this->migrateLegacyAssignments();
             Schema::dropIfExists('group_user');
         }
-
-        $this->ensureGroupPersonSchema();
     }
 
     /**
