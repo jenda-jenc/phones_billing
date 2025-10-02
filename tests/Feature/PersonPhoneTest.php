@@ -132,4 +132,13 @@ it('imports invoice rows for every matching phone number', function () {
         ->and($invoice->people)->toHaveCount(2)
         ->and($invoice->people->pluck('phone')->all())
         ->toEqualCanonicalizing($phones);
+
+    $responseData = $result['data'][$person->name] ?? [];
+
+    expect($responseData)->not->toBeEmpty();
+
+    foreach ($phones as $phone) {
+        expect($responseData[$phone]['invoice_person_id'] ?? null)
+            ->not->toBeNull();
+    }
 });
