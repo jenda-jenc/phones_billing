@@ -55,7 +55,7 @@ Route::post('/osoby', [PersonController::class, 'store'])->middleware(['auth', '
 Route::put('/osoby/{person}', [PersonController::class, 'update'])->middleware(['auth', 'verified'])->name('persons.update');
 Route::delete('/osoby/{person}', [PersonController::class, 'destroy'])->middleware(['auth', 'verified'])->name('persons.destroy');
 Route::patch('/osoby/{person}/group', [PersonController::class, 'assignGroup'])->middleware(['auth', 'verified'])->name('persons.assignGroup');
-Route::post('/osoby/detach-group', [PersonController::class, 'detachGroup'])->name('persons.detach-group');
+Route::post('/osoby/detach-group', [PersonController::class, 'detachGroup'])->middleware(['auth', 'verified'])->name('persons.detach-group');
 
 Route::get('/tarify', [GroupController::class, 'index'])->middleware(['auth', 'verified'])->name('groups.index');
 Route::post('/tarify', [GroupController::class, 'store'])->middleware(['auth', 'verified'])->name('groups.store');
