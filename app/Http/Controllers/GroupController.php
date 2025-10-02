@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\Tariff;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class GroupController extends Controller
 {
@@ -23,16 +24,16 @@ class GroupController extends Controller
     }
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'value' => ['required', 'string', 'max:255', Rule::unique('groups', 'value')],
         ], [
             'name.required' => 'Název skupiny je povinný.',
+            'value.required' => 'Hodnota je povinná.',
+            'value.unique' => 'Tato hodnota je již použita jinou skupinou.',
         ]);
 
-        Group::create([
-            'name' => $request->input('name'),
-            'value' => $request->input('value'),
-        ]);
+        Group::create($validated);
 
         return redirect()->route('groups.index')->with('success', 'Skupina byla úspěšně vytvořena.');
     }
@@ -108,9 +109,17 @@ class GroupController extends Controller
 
         // Validace dat z požadavku
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255'],
+            'value' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('groups', 'value')->ignore($group->id),
+            ],
         ], [
             'name.required' => 'Název skupiny je povinný.',
+            'value.required' => 'Hodnota je povinná.',
+            'value.unique' => 'Tato hodnota je již použita jinou skupinou.',
         ]);
 
         // Aktualizace hodnoty skupiny
