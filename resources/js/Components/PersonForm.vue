@@ -162,17 +162,6 @@ const props = defineProps({
     },
 });
 
-const errors = computed(() => props.errors ?? {});
-
-const emit = defineEmits(['submit']);
-
-const formData = reactive({
-    id: null,
-    name: '',
-    phones: [createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT)],
-    department: '',
-});
-
 const formatLimit = (value, fallback = '') => {
     if (value === null || value === undefined || value === '') {
         return fallback;
@@ -193,6 +182,17 @@ const formatLimit = (value, fallback = '') => {
 const createPhoneEntry = (phone = '', limit = '', fallback = '') => ({
     phone: typeof phone === 'string' ? phone : '',
     limit: formatLimit(limit, fallback),
+});
+
+const errors = computed(() => props.errors ?? {});
+
+const emit = defineEmits(['submit']);
+
+const formData = reactive({
+    id: null,
+    name: '',
+    phones: [createPhoneEntry('', DEFAULT_PHONE_LIMIT, DEFAULT_PHONE_LIMIT)],
+    department: '',
 });
 
 const normalizePhones = (phones) => {
