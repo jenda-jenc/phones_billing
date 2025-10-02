@@ -41,7 +41,7 @@ class ImportController extends Controller
             fclose($handle);
         }
 
-        $persons = Person::with(['groups.tariffs'])->get();
+        $persons = Person::with(['groups.tariffs', 'phones'])->get();
 
         $importService = new ImportService(
             $servicesData,

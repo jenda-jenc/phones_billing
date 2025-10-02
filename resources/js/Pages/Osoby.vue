@@ -11,7 +11,7 @@ const isEditing = ref(false);
 const formData = reactive({
     id: null,
     name: '',
-    phone: '',
+    phones: [''],
     department: '',
     limit: 450,
 });
@@ -55,7 +55,7 @@ const toggleForm = () => {
 const resetForm = () => {
     formData.id = null;
     formData.name = '';
-    formData.phone = '';
+    formData.phones = [''];
     formData.department = '';
     formData.limit = 450;
     isEditing.value = false;
@@ -74,9 +74,32 @@ const handleFormSubmit = async (data) => {
     }
 };
 
+const extractPhones = (person) => {
+    if (!person?.phones) {
+        return [];
+    }
+
+    return person.phones
+        .map((entry) => {
+            if (typeof entry === 'string') {
+                return entry;
+            }
+
+            if (entry && typeof entry === 'object') {
+                return entry.phone ?? '';
+            }
+
+            return '';
+        })
+        .filter((phone) => phone !== '');
+};
+
 // Otevře výběr skupiny pro konkrétní osobu
 const attachGroup = (person) => {
-    assignPerson.value = person;
+    assignPerson.value = {
+        ...person,
+        phones: extractPhones(person),
+    };
     assignGroupId.value = '';
     showGroupAssign.value = true;
     setTimeout(() => {
@@ -88,7 +111,12 @@ const attachGroup = (person) => {
     }, 0);
 };
 const editPerson = (person) => {
-    Object.assign(formData, person);
+    formData.id = person.id;
+    formData.name = person.name;
+    formData.department = person.department;
+    formData.limit = person.limit;
+    const phones = extractPhones(person);
+    formData.phones = phones.length ? phones : [''];
     isEditing.value = true;
     showForm.value = true;
     setTimeout(() => {
@@ -177,10 +205,11 @@ const deletePerson = async (id) => {
                 >
                     <span
                         >Přiřadit skupinu osobě
-                        <b
-                            >{{ assignPerson?.name }}({{
-                                assignPerson?.phone
-                            }})</b
+                        <b>{{ assignPerson?.name }}</b>
+                        <span v-if="assignPerson?.phones?.length"
+                            >({{
+                                assignPerson?.phones.join(', ')
+                            }})</span
                         >:</span
                     >
                     <select
