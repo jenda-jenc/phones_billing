@@ -38,14 +38,11 @@ return new class extends Migration
         }
 
         Schema::table('people', function (Blueprint $table) {
-            if (!Schema::hasColumn('people', 'phone')) {
+            if (! Schema::hasColumn('people', 'phone')) {
                 return;
             }
 
-            if (DB::getDriverName() !== 'sqlite') {
-                $table->dropUnique('people_phone_unique');
-            }
-
+            $table->dropUnique(['phone']);
             $table->dropColumn('phone');
         });
     }
