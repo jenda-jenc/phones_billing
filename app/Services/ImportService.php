@@ -226,7 +226,7 @@ class ImportService
                 'applied_rules' => $personData->aplikovanaPravidla ?: null,
             ]);
 
-            $personData->invoice_person_id = $invoicePerson->id;
+            $personData->invoicePersonId = $invoicePerson->id;
 
             foreach ($personData->sluzby as $service) {
                 $invoicePerson->lines()->create([
