@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Person extends Model
 {
@@ -19,10 +19,18 @@ class Person extends Model
      */
     protected $fillable = [
         'name',
-        'phone',
         'department',
         'limit',
     ];
+
+    protected $casts = [
+        'limit' => 'float',
+    ];
+
+    public function phones(): HasMany
+    {
+        return $this->hasMany(PersonPhone::class);
+    }
 
     public function groups()
     {

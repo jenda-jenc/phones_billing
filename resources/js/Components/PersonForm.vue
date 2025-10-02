@@ -18,23 +18,49 @@
                 </p>
             </div>
 
-            <!-- Telefonní číslo -->
+            <!-- Telefonní čísla -->
             <div class="mb-4">
-                <label
-                    for="phone"
-                    class="mb-2 block font-semibold text-gray-700"
-                    >Telefonní číslo</label
+                <label class="mb-2 block font-semibold text-gray-700">
+                    Telefonní čísla
+                </label>
+                <div
+                    v-for="(phone, index) in formData.phones"
+                    :key="`phone-${index}`"
+                    class="mb-2 flex items-start gap-2"
                 >
-                <input
-                    id="phone"
-                    type="tel"
-                    v-model="formData.phone"
-                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
-                    placeholder="Zadejte telefonní číslo"
-                />
-                <p v-if="errors.phone" class="mt-1 text-sm text-red-500">
-                    {{ errors.phone }}
+                    <input
+                        :id="`phone-${index}`"
+                        type="tel"
+                        v-model="formData.phones[index]"
+                        class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-800 transition focus:border-blue-500 focus:ring focus:ring-blue-200"
+                        placeholder="Zadejte telefonní číslo"
+                    />
+                    <button
+                        type="button"
+                        class="rounded bg-red-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+                        @click="removePhone(index)"
+                    >
+                        Odebrat
+                    </button>
+                </div>
+                <button
+                    type="button"
+                    class="rounded bg-green-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-600"
+                    @click="addPhone"
+                >
+                    Přidat číslo
+                </button>
+                <p v-if="errors.phones" class="mt-2 text-sm text-red-500">
+                    {{ errors.phones }}
                 </p>
+                <template v-for="(phone, index) in formData.phones" :key="`error-${index}`">
+                    <p
+                        v-if="errors[`phones.${index}`]"
+                        class="mt-1 text-sm text-red-500"
+                    >
+                        {{ errors[`phones.${index}`] }}
+                    </p>
+                </template>
             </div>
 
             <!-- Pracovní útvar -->
@@ -97,7 +123,7 @@ const props = defineProps({
         type: Object,
         default: () => ({
             name: '',
-            phone: '',
+            phones: [''],
             department: '',
             limit: 450,
         }),
@@ -114,17 +140,79 @@ const props = defineProps({
 
 const emit = defineEmits(['submit']);
 
-const formData = reactive({ ...props.initialData });
+const formData = reactive({
+    id: null,
+    name: '',
+    phones: [''],
+    department: '',
+    limit: 450,
+});
+
+const normalizePhones = (phones) => {
+    if (!Array.isArray(phones) || phones.length === 0) {
+        return [''];
+    }
+
+    const values = phones.map((entry) => {
+        if (typeof entry === 'object' && entry !== null) {
+            return entry.phone ?? '';
+        }
+
+        return typeof entry === 'string' ? entry : '';
+    });
+
+    return values.length ? values : [''];
+};
+
+const setFormData = (data) => {
+    formData.id = data?.id ?? null;
+    formData.name = data?.name ?? '';
+    formData.department = data?.department ?? '';
+    formData.limit = data?.limit ?? 450;
+
+    const phones = normalizePhones(data?.phones ?? ['']);
+
+    formData.phones.splice(0, formData.phones.length, ...phones);
+
+    if (formData.phones.length === 0) {
+        formData.phones.push('');
+    }
+};
+
+setFormData(props.initialData);
 
 watch(
     () => props.initialData,
     (newValue) => {
-        Object.assign(formData, newValue);
+        setFormData(newValue ?? {});
     },
     { deep: true },
 );
 
+const addPhone = () => {
+    formData.phones.push('');
+};
+
+const removePhone = (index) => {
+    if (formData.phones.length === 1) {
+        formData.phones.splice(0, 1, '');
+        return;
+    }
+
+    formData.phones.splice(index, 1);
+};
+
 const handleSubmit = () => {
-    emit('submit', { ...formData });
+    const payload = {
+        id: formData.id,
+        name: formData.name,
+        department: formData.department,
+        limit: formData.limit,
+        phones: formData.phones
+            .map((phone) => (typeof phone === 'string' ? phone.trim() : ''))
+            .filter((phone) => phone !== ''),
+    };
+
+    emit('submit', payload);
 };
 </script>

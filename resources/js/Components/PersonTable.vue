@@ -16,20 +16,46 @@ const search = ref(''); // Proměnná pro text vyhledávání
 const searchBy = ref('name'); // Přepínač mezi "name" a "phone"
 
 // Filtrování osob podle nastaveného hledání (name nebo phone)
+const normalizedSearch = computed(() => search.value.toLowerCase());
+
+const extractPhones = (person) => {
+    if (!person?.phones) {
+        return [];
+    }
+
+    return person.phones
+        .map((entry) => {
+            if (typeof entry === 'string') {
+                return entry;
+            }
+
+            if (entry && typeof entry === 'object') {
+                return entry.phone ?? '';
+            }
+
+            return '';
+        })
+        .filter((phone) => phone !== '');
+};
+
 const filteredPeople = computed(() => {
+    const query = normalizedSearch.value;
+
     if (searchBy.value === 'name') {
         return props.people.filter((person) =>
-            person.name.toLowerCase().includes(search.value.toLowerCase()),
+            person.name.toLowerCase().includes(query),
         );
     } else if (searchBy.value === 'phone') {
         return props.people.filter((person) =>
-            person.phone.toLowerCase().includes(search.value.toLowerCase()),
+            extractPhones(person).some((phone) =>
+                phone.toLowerCase().includes(query),
+            ),
         );
     } else if (searchBy.value === 'department') {
         return props.people.filter((person) =>
             person.department
                 .toLowerCase()
-                .includes(search.value.toLowerCase()),
+                .includes(query),
         );
     } else if (searchBy.value === 'group') {
         return props.people.filter(
@@ -38,7 +64,7 @@ const filteredPeople = computed(() => {
                 person.groups.some((group) =>
                     group.name
                         .toLowerCase()
-                        .includes(search.value.toLowerCase()),
+                        .includes(query),
                 ),
         );
     }
@@ -135,7 +161,7 @@ const removeGroup = async (personId, groupId) => {
             <thead>
                 <tr class="bg-gray-600 text-blue-50">
                     <th class="px-4 py-2 text-left">Jméno</th>
-                    <th class="px-4 py-2 text-left">Telefonní číslo</th>
+                    <th class="px-4 py-2 text-left">Telefonní čísla</th>
                     <th class="px-4 py-2 text-left">Pracovní útvar</th>
                     <th class="px-4 py-2 text-left">Limit</th>
                     <th class="px-4 py-2 text-left">Skupiny</th>
@@ -149,7 +175,18 @@ const removeGroup = async (personId, groupId) => {
                     class="transition odd:bg-gray-50 even:bg-white hover:bg-blue-50"
                 >
                     <td class="border-b px-4 py-2">{{ person.name }}</td>
-                    <td class="border-b px-4 py-2">{{ person.phone }}</td>
+                    <td class="border-b px-4 py-2">
+                        <template v-if="extractPhones(person).length">
+                            <span
+                                v-for="phone in extractPhones(person)"
+                                :key="phone"
+                                class="mr-2 inline-flex rounded bg-blue-100 px-2 py-1 text-sm text-blue-700"
+                            >
+                                {{ phone }}
+                            </span>
+                        </template>
+                        <span v-else class="text-gray-400">Žádné číslo</span>
+                    </td>
                     <td class="border-b px-4 py-2">{{ person.department }}</td>
                     <td class="border-b px-4 py-2">{{ person.limit }}</td>
                     <td class="border-b px-4 py-2">

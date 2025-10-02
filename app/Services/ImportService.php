@@ -95,7 +95,7 @@ class ImportService
      * Sjednoť data podle osob v DB, naplň jméno/limit a vypočítej "zaplati" a pravidla.
      *
      * @param array $mobiles [phone] => ['data'=>ImportedPersonData, 'vat'=>float]
-     * @return array{response: array, people: array<int, array{person: \App\Models\Person, data: ImportedPersonData}>}
+     * @return array{response: array, people: array<int, array{person: \App\Models\Person, phone: string, data: ImportedPersonData}>}
      */
     private function calculatePersons(array $mobiles): array
     {
@@ -103,67 +103,78 @@ class ImportService
         $peopleForPersistence = [];
 
         foreach ($this->persons as $person) {
-            $phone = $person->phone;
-            $entry = $mobiles[$phone] ?? null;
-            if (!$entry) continue;
+            foreach ($person->phones as $personPhone) {
+                $phone = $personPhone->phone;
 
-            /** @var ImportedPersonData $personData */
-            $personData = $entry['data'];
-            $vat = $entry['vat'];
-            $personData->name = $person->name;
-            $personData->limit = (float)$person->limit;
-            $personData->vat = $vat;
-
-            $platiSam = 0.0;
-
-            if (!empty($person->groups)) {
-                $servicesMap = [];
-                foreach ($personData->sluzby as $serviceEntry) {
-                    $servicesMap[$serviceEntry->sluzba] = $serviceEntry;
+                if (!$phone) {
+                    continue;
                 }
-                foreach ($person->groups as $group) {
-                    foreach ($group->tariffs as $tariff) {
-                        $tariffName = $this->unEscape($tariff->name);
-                        if (isset($servicesMap[$tariffName])) {
-                            $se = $servicesMap[$tariffName];
-                            $desc = [
-                                'skupina' => $se->skupina,
-                                'tarif'   => $se->tarif,
-                                'sluzba'  => $se->sluzba,
-                                'akce'    => $tariff->pivot->action,
-                                'cena_bez_dph' => $se->cena,
-                                'cena_s_dph' => $se->cena_s_dph,
-                            ];
-                            switch ($tariff->pivot->action) {
-                                case 'plati_sam':
-                                    $platiSam += $se->cena_s_dph;
-                                    $personData->addAplikovanePravidlo($desc + ['popis' => 'Platí sám']);
-                                    break;
-                                case 'ignorovat':
-                                    $personData->celkem -= $se->cena;
-                                    $personData->celkem_s_dph -= $se->cena_s_dph;
-                                    $personData->addAplikovanePravidlo($desc + ['popis' => 'Ignorováno']);
-                                    break;
-                                default:
-                                    $personData->addAplikovanePravidlo($desc + ['popis' => $tariff->pivot->action]);
-                                    break;
+
+                $entry = $mobiles[$phone] ?? null;
+                if (!$entry) {
+                    continue;
+                }
+
+                /** @var ImportedPersonData $personData */
+                $personData = $entry['data'];
+                $vat = $entry['vat'];
+                $personData->name = $person->name;
+                $personData->phone = $phone;
+                $personData->limit = (float)$person->limit;
+                $personData->vat = $vat;
+
+                $platiSam = 0.0;
+
+                if (!empty($person->groups)) {
+                    $servicesMap = [];
+                    foreach ($personData->sluzby as $serviceEntry) {
+                        $servicesMap[$serviceEntry->sluzba] = $serviceEntry;
+                    }
+                    foreach ($person->groups as $group) {
+                        foreach ($group->tariffs as $tariff) {
+                            $tariffName = $this->unEscape($tariff->name);
+                            if (isset($servicesMap[$tariffName])) {
+                                $se = $servicesMap[$tariffName];
+                                $desc = [
+                                    'skupina' => $se->skupina,
+                                    'tarif'   => $se->tarif,
+                                    'sluzba'  => $se->sluzba,
+                                    'akce'    => $tariff->pivot->action,
+                                    'cena_bez_dph' => $se->cena,
+                                    'cena_s_dph' => $se->cena_s_dph,
+                                ];
+                                switch ($tariff->pivot->action) {
+                                    case 'plati_sam':
+                                        $platiSam += $se->cena_s_dph;
+                                        $personData->addAplikovanePravidlo($desc + ['popis' => 'Platí sám']);
+                                        break;
+                                    case 'ignorovat':
+                                        $personData->celkem -= $se->cena;
+                                        $personData->celkem_s_dph -= $se->cena_s_dph;
+                                        $personData->addAplikovanePravidlo($desc + ['popis' => 'Ignorováno']);
+                                        break;
+                                    default:
+                                        $personData->addAplikovanePravidlo($desc + ['popis' => $tariff->pivot->action]);
+                                        break;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            $zaplati =  $personData->celkem_s_dph - $personData->limit ;
-            $personData->zaplati = ($zaplati < 0 || $zaplati < $platiSam) ? $platiSam : $zaplati;
-            if (!isset($mapped[$person->name])) {
-                $mapped[$person->name] = [];
-            }
-            $mapped[$person->name][$phone] = $personData;
+                $zaplati =  $personData->celkem_s_dph - $personData->limit ;
+                $personData->zaplati = ($zaplati < 0 || $zaplati < $platiSam) ? $platiSam : $zaplati;
+                if (!isset($mapped[$person->name])) {
+                    $mapped[$person->name] = [];
+                }
+                $mapped[$person->name][$phone] = $personData;
 
-            $peopleForPersistence[] = [
-                'person' => $person,
-                'data' => $personData,
-            ];
+                $peopleForPersistence[] = [
+                    'person' => $person,
+                    'phone' => $phone,
+                    'data' => $personData,
+                ];
+            }
         }
 
         return [
@@ -181,7 +192,7 @@ class ImportService
     }
 
     /**
-     * @param array<int, array{person: \App\Models\Person, data: ImportedPersonData}> $peopleData
+     * @param array<int, array{person: \App\Models\Person, phone: string, data: ImportedPersonData}> $peopleData
      */
     private function storeInvoice(array $peopleData): Invoice
     {
@@ -201,11 +212,12 @@ class ImportService
 
         foreach ($peopleData as $entry) {
             $person = $entry['person'];
+            $phone = $entry['phone'];
             $personData = $entry['data'];
 
             $invoicePerson = $invoice->people()->create([
                 'person_id' => $person->id,
-                'phone' => $personData->phone,
+                'phone' => $phone,
                 'vat_rate' => $personData->vat,
                 'total_without_vat' => $personData->celkem,
                 'total_with_vat' => $personData->celkem_s_dph,
