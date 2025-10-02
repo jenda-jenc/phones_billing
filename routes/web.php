@@ -64,7 +64,9 @@ Route::delete('/tarify/{tarif}', [GroupController::class, 'destroy'])->middlewar
 Route::post('/tarify/detach', [GroupController::class, 'detachTariff'])->middleware(['auth', 'verified'])->name('groups.detach-tariff');
 Route::post('/tarify/attach', [GroupController::class, 'attachTariff'])->middleware(['auth', 'verified'])->name('groups.attach-tariff');
 Route::get('/tarify-seznam', [GroupController::class, 'listTariffs'])->middleware(['auth', 'verified'])->name('groups.listTariffs');
-Route::post('/tarify-bulk', [GroupController::class, 'bulkStoreTariffs'])->name('tariffs.bulk-store');
+Route::post('/tarify-bulk', [GroupController::class, 'bulkStoreTariffs'])
+    ->middleware(['auth', 'verified'])
+    ->name('tariffs.bulk-store');
 
 
 Route::middleware('auth')->group(function () {
