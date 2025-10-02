@@ -65,7 +65,10 @@ const submit = () => {
             <input
                 v-model="localData.name"
                 type="text"
-                class="w-full rounded border px-3 py-2"
+                :class="[
+                    'w-full rounded border px-3 py-2',
+                    errors && errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+                ]"
             />
             <div v-if="errors && errors.name" class="text-xs text-red-600">
                 {{ errors.name }}
@@ -78,7 +81,10 @@ const submit = () => {
             <input
                 v-model="localData.value"
                 type="text"
-                class="w-full rounded border px-3 py-2"
+                :class="[
+                    'w-full rounded border px-3 py-2',
+                    errors && errors.value ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+                ]"
             />
             <div v-if="errors && errors.value" class="text-xs text-red-600">
                 {{ errors.value }}
