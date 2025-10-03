@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -99,20 +100,43 @@ class InvoiceController extends Controller
 
         $invoicePerson->loadMissing(['invoice', 'person.users', 'lines']);
 
-        $recipient = optional($invoicePerson->person)
-            ?->users
-            ->first();
+        $validated = $request->validate([
+            'email' => ['nullable', 'string', 'email'],
+        ]);
 
-        if (! $recipient) {
-            return response()->json([
-                'message' => 'K této osobě není přiřazen žádný uživatel.',
-            ], 422);
+        $recipientEmail = null;
+
+        if (array_key_exists('email', $validated)) {
+            $candidate = trim((string) $validated['email']);
+
+            if ($candidate !== '') {
+                $recipientEmail = Str::lower($candidate);
+            }
         }
 
-        Mail::to($recipient->email)->queue(new InvoiceBreakdownMail($invoicePerson));
+        if ($recipientEmail === null) {
+            $recipientEmail = optional($invoicePerson->person)
+                ?->users
+                ->first()
+                ?->email;
+
+            if (empty($recipientEmail)) {
+                $message = 'K této osobě není přiřazen žádný uživatel.';
+
+                return response()->json([
+                    'message' => $message,
+                    'errors' => [
+                        'email' => [$message],
+                    ],
+                ], 422);
+            }
+        }
+
+        Mail::to($recipientEmail)->queue(new InvoiceBreakdownMail($invoicePerson));
 
         return response()->json([
             'message' => 'E-mail s vyúčtováním byl odeslán.',
+            'email' => $recipientEmail,
         ]);
     }
 
@@ -202,6 +226,7 @@ class InvoiceController extends Controller
             'limit' => round((float) $invoicePerson->limit, 2),
             'payable' => round((float) $invoicePerson->payable, 2),
             'applied_rules' => $invoicePerson->applied_rules ?? [],
+            'default_email' => $this->buildDefaultEmailFromName(optional($person)->name),
             'person' => $person ? [
                 'id' => $person->id,
                 'name' => $person->name,
@@ -280,6 +305,56 @@ class InvoiceController extends Controller
         $name = pathinfo($base, PATHINFO_FILENAME) ?: $base;
 
         return sprintf('%s.%s', str($name)->slug('-'), $format);
+    }
+
+    private function buildDefaultEmailFromName(?string $name): ?string
+    {
+        if (empty($name)) {
+            return null;
+        }
+
+        $normalized = trim(Str::ascii($name));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $parts = preg_split('/\s+/', $normalized);
+
+        if ($parts === false || count($parts) === 0) {
+            return null;
+        }
+
+        $surname = array_pop($parts);
+
+        if ($surname === null) {
+            return null;
+        }
+
+        $surname = preg_replace('/[^A-Za-z0-9]/', '', $surname) ?? '';
+
+        if ($surname === '') {
+            return null;
+        }
+
+        $firstName = $parts[0] ?? $surname;
+        $firstInitial = Str::substr(preg_replace('/[^A-Za-z0-9]/', '', $firstName) ?? '', 0, 1);
+
+        if ($firstInitial === null || $firstInitial === '') {
+            $firstInitial = Str::substr($surname, 0, 1);
+        }
+
+        if ($firstInitial === null || $firstInitial === '') {
+            return null;
+        }
+
+        $localPart = Str::lower($surname . $firstInitial);
+
+        if ($localPart === '') {
+            return null;
+        }
+
+        return $localPart . '@senat.cz';
     }
 
     private function streamCsv(Invoice $invoice): void
