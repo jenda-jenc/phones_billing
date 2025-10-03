@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\InvoiceBreakdownMail;
+use App\Mail\InvoiceDebtorsSummaryMail;
 use App\Models\Invoice;
 use App\Models\InvoicePerson;
 use App\Models\User;
@@ -137,6 +138,51 @@ class InvoiceController extends Controller
         return response()->json([
             'message' => 'E-mail s vyúčtováním byl odeslán.',
             'email' => $recipientEmail,
+        ]);
+    }
+
+    public function emailDebtors(Request $request, Invoice $invoice): JsonResponse
+    {
+        abort_unless(
+            Gate::forUser($request->user())->allows('viewAny', InvoicePerson::class),
+            403
+        );
+
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        $recipientEmail = Str::lower(trim((string) $validated['email']));
+
+        $invoice->loadMissing([
+            'people.person',
+            'people.person.phones',
+            'people.lines',
+        ]);
+
+        $debtors = $invoice->people
+            ->filter(fn (InvoicePerson $invoicePerson) => (float) $invoicePerson->payable > 0)
+            ->values();
+
+        if ($debtors->isEmpty()) {
+            $message = 'Vyúčtování neobsahuje žádné dlužníky k odeslání.';
+
+            return response()->json([
+                'message' => $message,
+                'errors' => [
+                    'email' => [$message],
+                ],
+            ], 422);
+        }
+
+        $invoice->setRelation('people', $debtors);
+
+        Mail::to($recipientEmail)->queue(new InvoiceDebtorsSummaryMail($invoice));
+
+        return response()->json([
+            'message' => 'Souhrnný e-mail dlužníkům byl odeslán.',
+            'email' => $recipientEmail,
+            'count' => $debtors->count(),
         ]);
     }
 
