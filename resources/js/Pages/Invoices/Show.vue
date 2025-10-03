@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const props = defineProps({
     invoicePerson: {
@@ -11,6 +12,67 @@ const props = defineProps({
 });
 
 const hasLines = computed(() => props.invoicePerson?.lines?.length > 0);
+
+const emailForm = useForm({
+    email: props.invoicePerson?.default_email ?? '',
+});
+
+const submissionState = ref({ type: null, message: null });
+const isSubmitting = ref(false);
+
+watch(
+    () => props.invoicePerson?.default_email,
+    (value) => {
+        if (!emailForm.isDirty) {
+            emailForm.email = value ?? '';
+        }
+    },
+);
+
+const submitEmail = async () => {
+    submissionState.value = { type: null, message: null };
+    emailForm.clearErrors();
+    isSubmitting.value = true;
+
+    try {
+        const response = await axios.post(
+            route('invoices.email', { invoicePerson: props.invoicePerson.id }),
+            {
+                email: emailForm.email || null,
+            },
+        );
+
+        submissionState.value = {
+            type: 'success',
+            message:
+                response?.data?.message ?? 'E-mail s vyúčtováním byl odeslán.',
+        };
+    } catch (error) {
+        const response = error.response;
+
+        if (response?.status === 422) {
+            const errors = response.data?.errors ?? {};
+
+            if (errors.email?.length) {
+                emailForm.setError('email', errors.email[0]);
+            }
+
+            submissionState.value = {
+                type: 'error',
+                message:
+                    response.data?.message ??
+                    'E-mail se nepodařilo odeslat, zkontrolujte údaje.',
+            };
+        } else {
+            submissionState.value = {
+                type: 'error',
+                message: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.',
+            };
+        }
+    } finally {
+        isSubmitting.value = false;
+    }
+};
 
 const formatCurrency = (value) => {
     if (value === null || value === undefined) {
@@ -121,20 +183,57 @@ const formatCurrency = (value) => {
                             <h3 class="text-lg font-medium text-gray-900">
                                 Položky
                             </h3>
-                            <Link
-                                :href="
-                                    route('invoices.email', {
-                                        invoicePerson: invoicePerson.id,
-                                    })
-                                "
-                                method="post"
-                                as="button"
-                                type="button"
-                                class="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            <form
+                                class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                @submit.prevent="submitEmail"
                             >
-                                Odeslat e-mail
-                            </Link>
+                                <div class="flex flex-col">
+                                    <label
+                                        for="email"
+                                        class="text-xs font-medium uppercase tracking-wide text-gray-500"
+                                    >
+                                        E-mailová adresa
+                                    </label>
+                                    <input
+                                        id="email"
+                                        v-model="emailForm.email"
+                                        type="email"
+                                        name="email"
+                                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        :class="{
+                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
+                                                emailForm.errors.email,
+                                        }"
+                                        placeholder="např. novakj@senat.cz"
+                                    />
+                                    <p
+                                        v-if="emailForm.errors.email"
+                                        class="mt-1 text-xs text-red-600"
+                                    >
+                                        {{ emailForm.errors.email }}
+                                    </p>
+                                </div>
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                                    :disabled="isSubmitting"
+                                >
+                                    <span v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                                    Odeslat e-mail
+                                </button>
+                            </form>
                         </div>
+                        <p
+                            v-if="submissionState.message"
+                            :class="[
+                                'mt-3 rounded-md px-3 py-2 text-sm',
+                                submissionState.type === 'success'
+                                    ? 'bg-green-50 text-green-700'
+                                    : 'bg-red-50 text-red-700',
+                            ]"
+                        >
+                            {{ submissionState.message }}
+                        </p>
                     </div>
                     <div v-if="hasLines" class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
