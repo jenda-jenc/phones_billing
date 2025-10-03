@@ -57,7 +57,7 @@ class ImportController extends Controller
             ->with('success', 'Process proběhl v pořádku.');
     }
 
-    public function show(Invoice $invoice)
+    public function show(Request $request, Invoice $invoice)
     {
         $invoice->loadMissing(['people.person', 'people.lines']);
 
@@ -92,6 +92,8 @@ class ImportController extends Controller
         return inertia('ImportTable', [
             'importData' => $importData,
             'invoiceId' => $invoice->id,
+            'debtorsEmailRoute' => route('invoices.debtors.email', ['invoice' => $invoice->id]),
+            'defaultDebtorsEmail' => optional($request->user())->email,
         ]);
     }
 }

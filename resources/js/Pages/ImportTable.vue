@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, usePage } from '@inertiajs/vue3';
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, watch } from 'vue';
 import axios from 'axios'; // Přidej pokud budeš posílat request na backend
 
 const page = usePage();
@@ -14,6 +14,14 @@ const passedProps = defineProps({
         type: [Number, String],
         default: null,
     },
+    debtorsEmailRoute: {
+        type: String,
+        default: null,
+    },
+    defaultDebtorsEmail: {
+        type: String,
+        default: null,
+    },
 });
 
 const rawImportData = computed(
@@ -23,6 +31,16 @@ const safeImportData = computed(() => rawImportData.value ?? {});
 const invoiceId = computed(
     () => passedProps.invoiceId ?? page.props.invoiceId ?? null,
 );
+const debtorsEmailRoute = computed(
+    () => passedProps.debtorsEmailRoute ?? page.props.debtorsEmailRoute ?? null,
+);
+const defaultDebtorsEmail = computed(
+    () =>
+        passedProps.defaultDebtorsEmail ??
+        page.props.defaultDebtorsEmail ??
+        page.props.auth?.user?.email ??
+        '',
+);
 const flash = computed(() => page.props.flash || {});
 const isMissingImportData = computed(() => rawImportData.value === null);
 const hasImportRows = computed(
@@ -30,6 +48,23 @@ const hasImportRows = computed(
 );
 
 const expandedRows = reactive({});
+
+const debtorsEmailState = reactive({
+    email: '',
+    isSending: false,
+    message: '',
+    errors: [],
+});
+
+watch(
+    defaultDebtorsEmail,
+    (value) => {
+        if (!debtorsEmailState.email) {
+            debtorsEmailState.email = value ?? '';
+        }
+    },
+    { immediate: true },
+);
 
 function toggleRow(section, name, phone) {
     const key = `${section}-${name}-${phone}`;
@@ -135,6 +170,43 @@ async function sendNotification(name, phone, data) {
         isSendingNotification.value[key] = false;
     }
 }
+
+async function sendDebtorsSummaryEmail() {
+    debtorsEmailState.isSending = true;
+    debtorsEmailState.message = '';
+    debtorsEmailState.errors = [];
+
+    if (!debtorsEmailRoute.value) {
+        debtorsEmailState.message =
+            'Chybí adresa pro odeslání souhrnného e-mailu.';
+        debtorsEmailState.isSending = false;
+        return;
+    }
+
+    try {
+        const response = await axios.post(debtorsEmailRoute.value, {
+            email: debtorsEmailState.email,
+        });
+
+        debtorsEmailState.message =
+            response?.data?.message ?? 'Souhrnný e-mail byl odeslán.';
+        debtorsEmailState.email = response?.data?.email ?? debtorsEmailState.email;
+    } catch (error) {
+        const responseData = error?.response?.data ?? {};
+
+        debtorsEmailState.message =
+            responseData?.message ?? 'Chyba při odesílání souhrnného e-mailu.';
+
+        const emailErrors = responseData?.errors?.email ?? [];
+        debtorsEmailState.errors = Array.isArray(emailErrors)
+            ? emailErrors
+            : emailErrors
+                  ? [emailErrors].flat().map((value) => String(value))
+                  : [];
+    } finally {
+        debtorsEmailState.isSending = false;
+    }
+}
 </script>
 
 <template>
@@ -184,6 +256,66 @@ async function sendNotification(name, phone, data) {
             <p v-if="invoiceId" class="mb-4 text-sm text-gray-500">
                 Vyúčtování #{{ invoiceId }}
             </p>
+            <form
+                class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-sm"
+                @submit.prevent="sendDebtorsSummaryEmail"
+            >
+                <div class="flex flex-col gap-4 md:flex-row md:items-end">
+                    <div class="flex-1">
+                        <label
+                            for="debtors-email"
+                            class="mb-1 block text-sm font-semibold text-gray-700"
+                        >
+                            E-mail pro souhrn dlužníků
+                        </label>
+                        <input
+                            id="debtors-email"
+                            v-model="debtorsEmailState.email"
+                            type="email"
+                            :placeholder="page.props.auth?.user?.email ?? 'Zadejte e-mail'"
+                            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <ul
+                            v-if="debtorsEmailState.errors.length"
+                            class="mt-2 list-disc space-y-1 pl-4 text-sm text-red-600"
+                        >
+                            <li
+                                v-for="(error, index) in debtorsEmailState.errors"
+                                :key="`debtors-email-error-${index}`"
+                            >
+                                {{ error }}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="flex items-center gap-3 md:w-auto">
+                        <button
+                            type="submit"
+                            class="whitespace-nowrap rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="debtorsEmailState.isSending || !debtorsEmailRoute"
+                        >
+                            <span v-if="debtorsEmailState.isSending">Odesílám…</span>
+                            <span v-else>Odeslat souhrnný e-mail</span>
+                        </button>
+                        <span
+                            v-if="debtorsEmailState.message"
+                            :class="[
+                                'text-sm font-semibold',
+                                debtorsEmailState.errors.length
+                                    ? 'text-red-600'
+                                    : 'text-green-600',
+                            ]"
+                        >
+                            {{ debtorsEmailState.message }}
+                        </span>
+                    </div>
+                </div>
+                <p
+                    v-if="!debtorsEmailRoute"
+                    class="mt-2 text-sm text-orange-600"
+                >
+                    Není k dispozici adresa pro odeslání. Zkontrolujte konfiguraci aplikace.
+                </p>
+            </form>
             <div
                 v-if="!isMissingImportData && !hasImportRows"
                 class="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"

@@ -34,6 +34,10 @@ Route::post('/invoices/{invoicePerson}/email', [InvoiceController::class, 'email
     ->middleware(['auth', 'verified'])
     ->name('invoices.email');
 
+Route::post('/invoices/{invoice}/debtors/email', [InvoiceController::class, 'emailDebtors'])
+    ->middleware(['auth', 'verified'])
+    ->name('invoices.debtors.email');
+
 Route::get('/import', [ImportController::class, 'index'])->middleware(['auth', 'verified'])->name('import');
 Route::post('/import/process', [ImportController::class, 'processImport'])->middleware(['auth', 'verified'])->name('import.process');
 Route::get('/import/{invoice}', [ImportController::class, 'show'])
