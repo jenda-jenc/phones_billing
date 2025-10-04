@@ -159,7 +159,7 @@ async function sendNotification(name, phone, data) {
     }
 
     try {
-        const response = await axios.post(`/invoices/${invoicePersonId}/email`);
+        const response = await axios.post(`/invoices/${invoicePersonId}/email`, {email:data.name_email});
         notificationMessage.value[key] =
             response?.data?.message ?? 'E-mail byl úspěšně odeslán.';
     } catch (e) {
@@ -226,8 +226,8 @@ async function sendDebtorsSummaryEmail() {
             class="mx-auto mt-6 max-w-3xl rounded-md border border-red-300 bg-red-50 px-4 py-3 text-red-900 shadow"
         >
             <span class="font-semibold">Chyba:</span>
-            Nepodařilo se načíst data importu. Zkuste stránku načíst znovu
-            nebo opakujte import.
+            Nepodařilo se načíst data importu. Zkuste stránku načíst znovu nebo
+            opakujte import.
         </div>
 
         <!-- Flash notifikace -->
@@ -272,7 +272,9 @@ async function sendDebtorsSummaryEmail() {
                             id="debtors-email"
                             v-model="debtorsEmailState.email"
                             type="email"
-                            :placeholder="page.props.auth?.user?.email ?? 'Zadejte e-mail'"
+                            :placeholder="
+                                page.props.auth?.user?.email ?? 'Zadejte e-mail'
+                            "
                             class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                         <ul
@@ -280,7 +282,9 @@ async function sendDebtorsSummaryEmail() {
                             class="mt-2 list-disc space-y-1 pl-4 text-sm text-red-600"
                         >
                             <li
-                                v-for="(error, index) in debtorsEmailState.errors"
+                                v-for="(
+                                    error, index
+                                ) in debtorsEmailState.errors"
                                 :key="`debtors-email-error-${index}`"
                             >
                                 {{ error }}
@@ -291,9 +295,14 @@ async function sendDebtorsSummaryEmail() {
                         <button
                             type="submit"
                             class="whitespace-nowrap rounded bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            :disabled="debtorsEmailState.isSending || !debtorsEmailRoute"
+                            :disabled="
+                                debtorsEmailState.isSending ||
+                                !debtorsEmailRoute
+                            "
                         >
-                            <span v-if="debtorsEmailState.isSending">Odesílám…</span>
+                            <span v-if="debtorsEmailState.isSending"
+                                >Odesílám…</span
+                            >
                             <span v-else>Odeslat souhrnný e-mail</span>
                         </button>
                         <span
@@ -313,7 +322,8 @@ async function sendDebtorsSummaryEmail() {
                     v-if="!debtorsEmailRoute"
                     class="mt-2 text-sm text-orange-600"
                 >
-                    Není k dispozici adresa pro odeslání. Zkontrolujte konfiguraci aplikace.
+                    Není k dispozici adresa pro odeslání. Zkontrolujte
+                    konfiguraci aplikace.
                 </p>
             </form>
             <div
@@ -525,6 +535,14 @@ async function sendDebtorsSummaryEmail() {
                                         <div
                                             class="mt-6 flex items-center gap-3"
                                         >
+                                            <input
+                                                id="debtors-email"
+                                                v-model="data.nameEmail"
+                                                type="email"
+                                                :placeholder="data.name_email"
+                                                :value="data.name_email"
+                                                class="rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                            />
                                             <button
                                                 class="rounded bg-blue-600 px-4 py-2 text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
                                                 :disabled="

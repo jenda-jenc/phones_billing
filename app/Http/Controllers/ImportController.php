@@ -57,6 +57,14 @@ class ImportController extends Controller
             ->with('success', 'Process proběhl v pořádku.');
     }
 
+    function stripDiacritics(string $str): string {
+        $map = [
+            'á'=>'a','č'=>'c','ď'=>'d','é'=>'e','ě'=>'e','í'=>'i','ň'=>'n','ó'=>'o','ř'=>'r','š'=>'s','ť'=>'t','ú'=>'u','ů'=>'u','ý'=>'y','ž'=>'z',
+            'Á'=>'A','Č'=>'C','Ď'=>'D','É'=>'E','Ě'=>'E','Í'=>'I','Ň'=>'N','Ó'=>'O','Ř'=>'R','Š'=>'S','Ť'=>'T','Ú'=>'U','Ů'=>'U','Ý'=>'Y','Ž'=>'Z'
+        ];
+        return strtr($str, $map);
+    }
+
     public function show(Request $request, Invoice $invoice)
     {
         $invoice->loadMissing(['people.person', 'people.lines']);
@@ -65,10 +73,17 @@ class ImportController extends Controller
 
         foreach ($invoice->people as $invoicePerson) {
             $name = optional($invoicePerson->person)->name ?? $invoicePerson->phone;
+            $nameParts = explode(' ', $name);
+            $surname   = $nameParts[0] ?? '';
+            $firstname = $nameParts[1] ?? '';
+
+            $nameEmail = strtolower($this->stripDiacritics($surname . mb_substr($firstname, 0, 1))) . '@senat.cz';
+
             $phone = $invoicePerson->phone;
 
             $importData[$name][$phone] = [
                 'name' => $name,
+                'name_email' => $nameEmail,
                 'phone' => $phone,
                 'limit' => $invoicePerson->limit,
                 'celkem' => round($invoicePerson->total_without_vat, 4),

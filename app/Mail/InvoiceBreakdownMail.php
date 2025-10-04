@@ -24,7 +24,7 @@ class InvoiceBreakdownMail extends Mailable implements ShouldQueue
         $person = $this->invoicePerson->person;
         $invoice = $this->invoicePerson->invoice;
 
-        $subject = 'Vyúčtování #' . ($invoice?->id ?? $this->invoicePerson->id);
+        $subject = 'Vyúčtování ' . ($invoice?->billing_period ?? $this->invoicePerson->id);
 
         return $this->subject($subject)
             ->view('emails.invoices.breakdown')

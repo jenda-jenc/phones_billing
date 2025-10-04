@@ -32,12 +32,6 @@
 
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">
                     Posíláme souhrnný přehled všech osob s částkou k úhradě
-                    @if($invoice->id)
-                        za fakturu <strong>#{{ $invoice->id }}</strong>
-                    @endif
-                    @if($invoice->source_filename)
-                        ({{ $invoice->source_filename }})
-                    @endif
                     @if($billingLabel)
                         za období {{ \Illuminate\Support\Str::lower($billingLabel) }}
                     @endif
@@ -49,18 +43,6 @@
                         <div style="flex:1 1 180px;">
                             <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6366f1;">Počet dlužníků</div>
                             <div style="font-size:22px;font-weight:700;color:#312e81;">{{ $debtors->count() }}</div>
-                        </div>
-                        <div style="flex:1 1 180px;">
-                            <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem bez DPH</div>
-                            <div style="font-size:18px;font-weight:600;color:#111827;">{{ $totalWithoutVat }} Kč</div>
-                        </div>
-                        <div style="flex:1 1 180px;">
-                            <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem s DPH</div>
-                            <div style="font-size:18px;font-weight:600;color:#111827;">{{ $totalWithVat }} Kč</div>
-                        </div>
-                        <div style="flex:1 1 220px;">
-                            <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4338ca;">Částka k úhradě</div>
-                            <div style="font-size:22px;font-weight:700;color:#4338ca;">{{ $totalPayable }} Kč</div>
                         </div>
                     </div>
                 </div>
@@ -84,67 +66,102 @@
                             <div style="margin-top:4px;font-size:13px;color:#6b7280;">Telefon: {{ $phone }}</div>
                         </div>
                         <div style="padding:20px 22px;">
-                            <table style="width:100%;border-collapse:separate;border-spacing:0 10px;margin-bottom:18px;">
-                                <tbody>
-                                    <tr>
-                                        <td style="width:55%;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem bez DPH</td>
-                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personTotalWithoutVat }} Kč</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">DPH</td>
-                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $vatFormatted }} Kč</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem s DPH</td>
-                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personTotalWithVat }} Kč</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Limit</td>
-                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personLimit }} Kč</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4338ca;">K úhradě</td>
-                                        <td style="text-align:right;font-size:18px;font-weight:700;color:#4338ca;">{{ $personPayable }} Kč</td>
-                                    </tr>
-                                </tbody>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:18px;text-align:center;">
+                                <tr>
+                                    <th style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;padding:6px 8px;">
+                                        Celkem bez DPH
+                                    </th>
+                                    <th style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;padding:6px 8px;">
+                                        DPH
+                                    </th>
+                                    <th style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;padding:6px 8px;">
+                                        Celkem s DPH
+                                    </th>
+                                    <th style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;padding:6px 8px;">
+                                        Limit
+                                    </th>
+                                    <th style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4338ca;padding:6px 8px;">
+                                        K úhradě
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td style="font-size:16px;font-weight:600;color:#111827;padding:6px 8px;">
+                                        {{ $personTotalWithoutVat }} Kč
+                                    </td>
+                                    <td style="font-size:16px;font-weight:600;color:#111827;padding:6px 8px;">
+                                        {{ $vatFormatted }} Kč
+                                    </td>
+                                    <td style="font-size:16px;font-weight:600;color:#111827;padding:6px 8px;">
+                                        {{ $personTotalWithVat }} Kč
+                                    </td>
+                                    <td style="font-size:16px;font-weight:600;color:#111827;padding:6px 8px;">
+                                        {{ $personLimit }} Kč
+                                    </td>
+                                    <td style="font-size:18px;font-weight:700;color:#4338ca;padding:6px 8px;">
+                                        {{ $personPayable }} Kč
+                                    </td>
+                                </tr>
                             </table>
 
-                            @if($invoicePerson->lines->isNotEmpty())
-                                <h3 style="margin:0 0 10px;font-size:15px;font-weight:600;color:#1f2937;">Detailní přehled služeb</h3>
-                                <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;margin-bottom:16px;">
-                                    <thead>
-                                        <tr style="background-color:#eef2ff;color:#3730a3;">
-                                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Skupina</th>
-                                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Služba</th>
-                                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Tarif</th>
-                                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena bez DPH</th>
-                                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena s DPH</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($invoicePerson->lines as $line)
-                                            <tr style="background-color:#ffffff;border-bottom:1px solid #e5e7eb;">
-                                                <td style="padding:10px 12px;font-size:14px;color:#374151;">{{ $line->group_name ?? '—' }}</td>
-                                                <td style="padding:10px 12px;font-size:14px;color:#111827;font-weight:500;">{{ $line->service_name }}</td>
-                                                <td style="padding:10px 12px;font-size:14px;color:#374151;">{{ $line->tariff ?? '—' }}</td>
-                                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_without_vat, 2, ',', ' ') }} Kč</td>
-                                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_with_vat, 2, ',', ' ') }} Kč</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                    <tfoot>
-                                        <tr style="background-color:#f9fafb;font-weight:600;color:#111827;">
-                                            <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Součet</td>
-                                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $personTotalWithoutVat }} Kč</td>
-                                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $personTotalWithVat }} Kč</td>
-                                        </tr>
-                                        <tr style="background-color:#eef2ff;font-weight:700;color:#4338ca;">
-                                            <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Částka k úhradě</td>
-                                            <td colspan="2" style="padding:10px 12px;text-align:right;font-size:16px;">{{ $personPayable }} Kč</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            @endif
+                            {{--                            <table style="width:100%;border-collapse:separate;border-spacing:0 10px;margin-bottom:18px;">--}}
+{{--                                <tbody>--}}
+{{--                                    <tr>--}}
+{{--                                        <td style="width:55%;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem bez DPH</td>--}}
+{{--                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personTotalWithoutVat }} Kč</td>--}}
+{{--                                    </tr>--}}
+{{--                                    <tr>--}}
+{{--                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">DPH</td>--}}
+{{--                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $vatFormatted }} Kč</td>--}}
+{{--                                    </tr>--}}
+{{--                                    <tr>--}}
+{{--                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Celkem s DPH</td>--}}
+{{--                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personTotalWithVat }} Kč</td>--}}
+{{--                                    </tr>--}}
+{{--                                    <tr>--}}
+{{--                                        <td style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6b7280;">Limit</td>--}}
+{{--                                        <td style="text-align:right;font-size:16px;font-weight:600;color:#111827;">{{ $personLimit }} Kč</td>--}}
+{{--                                    </tr>--}}
+{{--                                    <tr>--}}
+{{--                                        <td style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#4338ca;">K úhradě</td>--}}
+{{--                                        <td style="text-align:right;font-size:18px;font-weight:700;color:#4338ca;">{{ $personPayable }} Kč</td>--}}
+{{--                                    </tr>--}}
+{{--                                </tbody>--}}
+{{--                            </table>--}}
+
+{{--                            @if($invoicePerson->lines->isNotEmpty())--}}
+{{--                                <h3 style="margin:0 0 10px;font-size:15px;font-weight:600;color:#1f2937;">Detailní přehled služeb</h3>--}}
+{{--                                <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;margin-bottom:16px;">--}}
+{{--                                    <thead>--}}
+{{--                                        <tr style="background-color:#eef2ff;color:#3730a3;">--}}
+{{--                                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Služba</th>--}}
+{{--                                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Tarif</th>--}}
+{{--                                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena bez DPH</th>--}}
+{{--                                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena s DPH</th>--}}
+{{--                                        </tr>--}}
+{{--                                    </thead>--}}
+{{--                                    <tbody>--}}
+{{--                                        @foreach($invoicePerson->lines as $line)--}}
+{{--                                            <tr style="background-color:#ffffff;border-bottom:1px solid #e5e7eb;">--}}
+{{--                                                <td style="padding:10px 12px;font-size:14px;color:#111827;font-weight:500;">{{ $line->service_name }}</td>--}}
+{{--                                                <td style="padding:10px 12px;font-size:14px;color:#374151;">{{ $line->tariff ?? '—' }}</td>--}}
+{{--                                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_without_vat, 2, ',', ' ') }} Kč</td>--}}
+{{--                                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_with_vat, 2, ',', ' ') }} Kč</td>--}}
+{{--                                            </tr>--}}
+{{--                                        @endforeach--}}
+{{--                                    </tbody>--}}
+{{--                                    <tfoot>--}}
+{{--                                        <tr style="background-color:#f9fafb;font-weight:600;color:#111827;">--}}
+{{--                                            <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Součet</td>--}}
+{{--                                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $personTotalWithoutVat }} Kč</td>--}}
+{{--                                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $personTotalWithVat }} Kč</td>--}}
+{{--                                        </tr>--}}
+{{--                                        <tr style="background-color:#eef2ff;font-weight:700;color:#4338ca;">--}}
+{{--                                            <td colspan="3" style="padding:10px 12px;text-align:right;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Částka k úhradě</td>--}}
+{{--                                            <td colspan="2" style="padding:10px 12px;text-align:right;font-size:16px;">{{ $personPayable }} Kč</td>--}}
+{{--                                        </tr>--}}
+{{--                                    </tfoot>--}}
+{{--                                </table>--}}
+{{--                            @endif--}}
 
                             @if(!empty($invoicePerson->applied_rules))
                                 <div style="margin-top:18px;">
@@ -170,7 +187,7 @@
 
                 <div style="margin-top:24px;padding:18px;border-radius:12px;background-color:#eef2ff;color:#4338ca;font-size:13px;line-height:1.7;">
                     <strong>Poznámka:</strong>
-                    Částky k úhradě zohledňují nastavené limity jednotlivých osob. V případě dotazů se prosím obraťte na podporu.
+                    Částky k úhradě zohledňují nastavené limity jednotlivých osob. V případě dotazů se prosím obraťte na oddělení audiovizuální podpory.
                 </div>
             </div>
         </div>

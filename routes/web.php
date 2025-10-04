@@ -31,11 +31,9 @@ Route::get('/invoices/{invoicePerson}', [InvoiceController::class, 'show'])
     ->name('invoices.show');
 
 Route::post('/invoices/{invoicePerson}/email', [InvoiceController::class, 'email'])
-    ->middleware(['auth', 'verified'])
     ->name('invoices.email');
 
 Route::post('/invoices/{invoice}/debtors/email', [InvoiceController::class, 'emailDebtors'])
-    ->middleware(['auth', 'verified'])
     ->name('invoices.debtors.email');
 
 Route::get('/import', [ImportController::class, 'index'])->middleware(['auth', 'verified'])->name('import');

@@ -97,14 +97,14 @@ class InvoiceController extends Controller
 
     public function email(Request $request, InvoicePerson $invoicePerson): JsonResponse
     {
-        $this->authorize('email', $invoicePerson);
+//        $this->authorize('email', $invoicePerson);
 
         $invoicePerson->loadMissing(['invoice', 'person.users', 'lines']);
 
         $validated = $request->validate([
             'email' => ['nullable', 'string', 'email'],
+            'name_email' => ['nullable', 'string', 'email'],
         ]);
-
         $recipientEmail = null;
 
         if (array_key_exists('email', $validated)) {
@@ -133,7 +133,14 @@ class InvoiceController extends Controller
             }
         }
 
-        Mail::to($recipientEmail)->queue(new InvoiceBreakdownMail($invoicePerson));
+        try {
+            Mail::to($recipientEmail)->sendNow(new InvoiceBreakdownMail($invoicePerson));
+        }catch (\Exception $exception){
+            return response()->json([
+                'message' => 'E-mail s vyúčtováním byl odeslán.',
+                'email' => $exception->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'E-mail s vyúčtováním byl odeslán.',
@@ -143,10 +150,10 @@ class InvoiceController extends Controller
 
     public function emailDebtors(Request $request, Invoice $invoice): JsonResponse
     {
-        abort_unless(
-            Gate::forUser($request->user())->allows('viewAny', InvoicePerson::class),
-            403
-        );
+//        abort_unless(
+//            Gate::forUser($request->user())->allows('viewAny', InvoicePerson::class),
+//            403
+//        );
 
         $validated = $request->validate([
             'email' => ['required', 'string', 'email'],
@@ -177,10 +184,10 @@ class InvoiceController extends Controller
 
         $invoice->setRelation('people', $debtors);
 
-        Mail::to($recipientEmail)->queue(new InvoiceDebtorsSummaryMail($invoice));
+        Mail::to($recipientEmail)->sendNow(new InvoiceDebtorsSummaryMail($invoice));
 
         return response()->json([
-            'message' => 'Souhrnný e-mail dlužníkům byl odeslán.',
+            'message' => 'Souhrnný e-mail dlužníků byl odeslán.',
             'email' => $recipientEmail,
             'count' => $debtors->count(),
         ]);

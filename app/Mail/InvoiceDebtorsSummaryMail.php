@@ -36,7 +36,7 @@ class InvoiceDebtorsSummaryMail extends Mailable implements ShouldQueue
         $subjectParts = ['Souhrn dlužníků'];
 
         if ($this->invoice->id !== null) {
-            $subjectParts[] = '#'.$this->invoice->id;
+            $subjectParts[] = $this->invoice->billing_period;
         }
 
         return $this->subject(implode(' ', $subjectParts))
