@@ -7,6 +7,7 @@ use App\Mail\InvoiceDebtorsSummaryMail;
 use App\Models\Invoice;
 use App\Models\InvoicePerson;
 use App\Models\User;
+use http\Env;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -131,6 +132,13 @@ class InvoiceController extends Controller
                     ],
                 ], 422);
             }
+        }
+
+        if (getenv('APP_ENV') !== 'prod' && $recipientEmail !== getenv('TEST_EMAIL')){
+            return response()->json([
+                'message' => 'E-mail '.$recipientEmail.' nebyl odeslán(dev)',
+                'email' => $recipientEmail,
+            ]);
         }
 
         try {

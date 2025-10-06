@@ -16,7 +16,20 @@
                 <p style="margin:0 0 28px;font-size:15px;line-height:1.6;">
                     přehled
                     @if($invoice)
-                        čísla <strong>{{ $invoicePerson->phone }}</strong> za období <strong>{{ $invoice->billing_period }}</strong>
+                        čísla <strong>{{ $invoicePerson->phone }}</strong> za období
+                        @php
+                            $billingLabel = null;
+                            if (!empty($invoice->billing_period)) {
+                                try {
+                                    $billingLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m', $invoice->billing_period)
+                                        ->locale('cs')
+                                        ->translatedFormat('F Y');
+                                } catch (\Throwable $e) {
+                                    $billingLabel = $invoice->billing_period;
+                                }
+                            }
+                        @endphp
+                        <strong>{{ $billingLabel }}</strong>
                     @else
                         za evidovaný záznam
                     @endif
@@ -70,43 +83,58 @@
                 </table>
 
                 @if($lines->isNotEmpty())
+                    @php
+                        // Seznam služeb z aplikovaných pravidel (pro zvýraznění)
+                        $highlightedServices = collect($invoicePerson->applied_rules ?? [])
+                            ->pluck('sluzba')
+                            ->filter()
+                            ->map(fn($s) => trim(\Illuminate\Support\Str::lower($s)))
+                            ->toArray();
+                    @endphp
+
                     <h2 style="margin:0 0 12px;font-size:17px;font-weight:600;color:#111827;">Detailní přehled</h2>
                     <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;">
                         <thead>
-                            <tr style="background-color:#eef2ff;color:#3730a3;">
-                                <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Služba</th>
-                                <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Tarif</th>
-                                <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena bez DPH</th>
-                                <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena s DPH</th>
-                            </tr>
+                        <tr style="background-color:#eef2ff;color:#3730a3;">
+                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Služba</th>
+                            <th style="padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Tarif</th>
+                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena bez DPH</th>
+                            <th style="padding:10px 12px;text-align:right;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;">Cena s DPH</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            @foreach($lines as $line)
-                                <tr style="background-color:#ffffff;border-bottom:1px solid #e5e7eb;">
-                                    <td style="padding:10px 12px;font-size:14px;color:#111827;font-weight:500;">{{ $line->service_name }}</td>
-                                    <td style="padding:10px 12px;font-size:14px;color:#374151;">{{ $line->tariff ?? '—' }}</td>
-                                    <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_without_vat, 2, ',', ' ') }} Kč</td>
-                                    <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_with_vat, 2, ',', ' ') }} Kč</td>
-                                </tr>
-                            @endforeach
+                        @foreach($lines as $line)
+                            @php
+                                // zkontrolujeme, zda služba je mezi aplikovanými pravidly
+                                $isHighlighted = in_array(trim(\Illuminate\Support\Str::lower($line->service_name)), $highlightedServices);
+                                $rowBg = $isHighlighted ? '#fee2e2' : '#ffffff'; // světle červené zvýraznění
+                                $fontWeight = $isHighlighted ? '700' : '500';
+                            @endphp
+                            <tr style="background-color:{{ $rowBg }};border-bottom:1px solid #e5e7eb;">
+                                <td style="padding:10px 12px;font-size:14px;color:#111827;font-weight:{{ $fontWeight }};">{{ $line->service_name }}</td>
+                                <td style="padding:10px 12px;font-size:14px;color:#374151;">{{ $line->tariff ?? '—' }}</td>
+                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_without_vat, 2, ',', ' ') }} Kč</td>
+                                <td style="padding:10px 12px;font-size:14px;color:#111827;text-align:right;">{{ number_format($line->price_with_vat, 2, ',', ' ') }} Kč</td>
+                            </tr>
+                        @endforeach
                         </tbody>
                         <tfoot>
-                            <tr style="background-color:#f9fafb;font-weight:600;color:#111827;">
-                                <td colspan="2" style="padding:10px 12px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Součet</td>
-                                <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $totalWithoutVat }} Kč</td>
-                                <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $totalWithVat }} Kč</td>
-                            </tr>
-                            <tr style="background-color:#eef2ff;font-weight:700;color:#4338ca;">
-                                <td colspan="1" style="padding:10px 12px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Částka k úhradě</td>
-                                <td colspan="1" style="padding:10px 12px;font-size:16px;"></td>
-                                <td colspan="1" style="padding:10px 12px;font-size:16px;"></td>
-                                <td colspan="1" style="padding:10px 12px;font-size:16px;">{{ $payable }} Kč</td>
-                            </tr>
+                        <tr style="background-color:#f9fafb;font-weight:600;color:#111827;">
+                            <td colspan="2" style="padding:10px 12px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Součet</td>
+                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $totalWithoutVat }} Kč</td>
+                            <td style="padding:10px 12px;text-align:right;font-size:14px;">{{ $totalWithVat }} Kč</td>
+                        </tr>
+                        <tr style="background-color:#eef2ff;font-weight:700;color:#4338ca;">
+                            <td colspan="1" style="padding:10px 12px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Částka k úhradě</td>
+                            <td colspan="1" style="padding:10px 12px;font-size:16px;"></td>
+                            <td colspan="1" style="padding:10px 12px;font-size:16px;"></td>
+                            <td colspan="1" style="padding:10px 12px;font-size:16px;">{{ $payable }} Kč</td>
+                        </tr>
                         </tfoot>
                     </table>
                 @endif
 
-                @if(!empty($invoicePerson->applied_rules))
+            @if(!empty($invoicePerson->applied_rules))
                     <div style="margin-top:28px;">
                         <h2 style="margin:0 0 12px;font-size:17px;font-weight:600;color:#111827;">Aplikovaná pravidla</h2>
                         <ul style="margin:0;padding-left:18px;color:#374151;font-size:14px;line-height:1.6;">

@@ -158,18 +158,25 @@ async function sendNotification(name, phone, data) {
         return;
     }
 
+    // 🟢 vezmeme e-mail z inputu, nebo fallback na původní data.name_email
+    const emailToSend = data.emailInput?.trim() || data.name_email;
+
     try {
-        const response = await axios.post(`/invoices/${invoicePersonId}/email`, {email:data.name_email});
+        const response = await axios.post(
+            `/invoices/${invoicePersonId}/email`,
+            { email: emailToSend },
+        );
+        console.log(response);
         notificationMessage.value[key] =
             response?.data?.message ?? 'E-mail byl úspěšně odeslán.';
     } catch (e) {
-        const message =
+        notificationMessage.value[key] =
             e?.response?.data?.message ?? 'Chyba při odesílání e-mailu!';
-        notificationMessage.value[key] = message;
     } finally {
         isSendingNotification.value[key] = false;
     }
 }
+
 
 async function sendDebtorsSummaryEmail() {
     debtorsEmailState.isSending = true;
@@ -536,11 +543,9 @@ async function sendDebtorsSummaryEmail() {
                                             class="mt-6 flex items-center gap-3"
                                         >
                                             <input
-                                                id="debtors-email"
-                                                v-model="data.nameEmail"
+                                                v-model="data.emailInput"
                                                 type="email"
                                                 :placeholder="data.name_email"
-                                                :value="data.name_email"
                                                 class="rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                             />
                                             <button

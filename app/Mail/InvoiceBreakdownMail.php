@@ -24,7 +24,19 @@ class InvoiceBreakdownMail extends Mailable implements ShouldQueue
         $person = $this->invoicePerson->person;
         $invoice = $this->invoicePerson->invoice;
 
-        $subject = 'Vyúčtování ' . ($invoice?->billing_period ?? $this->invoicePerson->id);
+
+        $billingLabel = null;
+
+        if (!empty($invoice->billing_period)) {
+            try {
+                $billingLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m', $invoice->billing_period)
+                    ->locale('cs')
+                    ->translatedFormat('F Y');
+            } catch (\Throwable $e) {
+                $billingLabel = $invoice->billing_period;
+            }
+        }
+        $subject = 'Vyúčtování ' . $billingLabel;
 
         return $this->subject($subject)
             ->view('emails.invoices.breakdown')

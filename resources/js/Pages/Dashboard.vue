@@ -80,13 +80,19 @@ const formatCurrency = (value) => {
                                                 scope="col"
                                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                                             >
-                                                Soubor
+                                                Období
                                             </th>
                                             <th
                                                 scope="col"
                                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                                             >
-                                                Období
+                                                poskytovatel
+                                            </th>
+                                            <th
+                                                scope="col"
+                                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                                            >
+                                                Soubor
                                             </th>
                                             <th
                                                 scope="col"
@@ -94,35 +100,35 @@ const formatCurrency = (value) => {
                                             >
                                                 Vytvořeno
                                             </th>
+<!--                                            <th-->
+<!--                                                scope="col"-->
+<!--                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"-->
+<!--                                            >-->
+<!--                                                Osoby / Položky-->
+<!--                                            </th>-->
+<!--                                            <th-->
+<!--                                                scope="col"-->
+<!--                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"-->
+<!--                                            >-->
+<!--                                                Celkem bez DPH-->
+<!--                                            </th>-->
+<!--                                            <th-->
+<!--                                                scope="col"-->
+<!--                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"-->
+<!--                                            >-->
+<!--                                                Celkem s DPH-->
+<!--                                            </th>-->
+<!--                                            <th-->
+<!--                                                scope="col"-->
+<!--                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"-->
+<!--                                            >-->
+<!--                                                Limit / K úhradě-->
+<!--                                            </th>-->
                                             <th
                                                 scope="col"
                                                 class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
                                             >
-                                                Osoby / Položky
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
-                                            >
-                                                Celkem bez DPH
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
-                                            >
-                                                Celkem s DPH
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
-                                            >
-                                                Limit / K úhradě
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
-                                            >
-                                                Stažení
+                                                Přehled
                                             </th>
                                         </tr>
                                     </thead>
@@ -143,14 +149,6 @@ const formatCurrency = (value) => {
                                                 class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
                                             >
                                                 {{
-                                                    invoice.source_filename ??
-                                                    '—'
-                                                }}
-                                            </td>
-                                            <td
-                                                class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
-                                            >
-                                                {{
                                                     invoice.billing_period_label ??
                                                     invoice.billing_period ??
                                                     '—'
@@ -159,48 +157,61 @@ const formatCurrency = (value) => {
                                             <td
                                                 class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
                                             >
+                                                t-mobile / o2 / jiné
+                                            </td>
+                                            <td
+                                                class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
+                                            >
+                                                {{
+                                                    invoice.source_filename ??
+                                                    '—'
+                                                }}
+                                            </td>
+                                            <td
+                                                class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
+                                            >
                                                 {{ invoice.created_at ?? '—' }}
                                             </td>
-                                            <td
-                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"
-                                            >
-                                                {{ invoice.people_count }} /
-                                                {{ invoice.line_count }}
-                                            </td>
-                                            <td
-                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"
-                                            >
-                                                {{
-                                                    formatCurrency(
-                                                        invoice.totals
-                                                            .without_vat,
-                                                    )
-                                                }}
-                                            </td>
-                                            <td
-                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"
-                                            >
-                                                {{
-                                                    formatCurrency(
-                                                        invoice.totals.with_vat,
-                                                    )
-                                                }}
-                                            </td>
-                                            <td
-                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"
-                                            >
-                                                {{
-                                                    formatCurrency(
-                                                        invoice.totals.limit,
-                                                    )
-                                                }}
-                                                /
-                                                {{
-                                                    formatCurrency(
-                                                        invoice.totals.payable,
-                                                    )
-                                                }}
-                                            </td>
+<!--                                            <td-->
+<!--                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"-->
+<!--                                            >-->
+<!--                                                {{ invoice.people_count }} /-->
+<!--                                                {{ invoice.line_count }}-->
+<!--                                            </td>-->
+<!--                                            <td-->
+<!--                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"-->
+<!--                                            >-->
+<!--                                                {{-->
+<!--                                                    formatCurrency(-->
+<!--                                                        invoice.totals-->
+<!--                                                            .without_vat,-->
+<!--                                                    )-->
+<!--                                                }}-->
+<!--                                            </td>-->
+<!--                                            <td-->
+<!--                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"-->
+<!--                                            >-->
+<!--                                                {{-->
+<!--                                                    formatCurrency(-->
+<!--                                                        invoice.totals.with_vat,-->
+<!--                                                    )-->
+<!--                                                }}-->
+<!--                                            </td>-->
+<!--                                            <td-->
+<!--                                                class="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-700"-->
+<!--                                            >-->
+<!--                                                {{-->
+<!--                                                    formatCurrency(-->
+<!--                                                        invoice.totals.limit,-->
+<!--                                                    )-->
+<!--                                                }}-->
+<!--                                                /-->
+<!--                                                {{-->
+<!--                                                    formatCurrency(-->
+<!--                                                        invoice.totals.payable,-->
+<!--                                                    )-->
+<!--                                                }}-->
+<!--                                            </td>-->
                                             <td
                                                 class="whitespace-nowrap px-4 py-3 text-right text-sm"
                                             >
@@ -211,7 +222,7 @@ const formatCurrency = (value) => {
                                                         :href="route('import.show', invoice.id)"
                                                         class="inline-flex items-center rounded border border-indigo-600 px-2 py-1 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50"
                                                     >
-                                                        Import
+                                                        Zobrazit
                                                     </Link>
                                                     <select
                                                         v-if="
@@ -247,24 +258,24 @@ const formatCurrency = (value) => {
                                                     >
                                                         Detail
                                                     </Link>
-                                                    <a
-                                                        :href="
-                                                            invoice.downloads
-                                                                .csv
-                                                        "
-                                                        class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100"
-                                                    >
-                                                        CSV
-                                                    </a>
-                                                    <a
-                                                        :href="
-                                                            invoice.downloads
-                                                                .pdf
-                                                        "
-                                                        class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100"
-                                                    >
-                                                        PDF
-                                                    </a>
+<!--                                                    <a-->
+<!--                                                        :href="-->
+<!--                                                            invoice.downloads-->
+<!--                                                                .csv-->
+<!--                                                        "-->
+<!--                                                        class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100"-->
+<!--                                                    >-->
+<!--                                                        CSV-->
+<!--                                                    </a>-->
+<!--                                                    <a-->
+<!--                                                        :href="-->
+<!--                                                            invoice.downloads-->
+<!--                                                                .pdf-->
+<!--                                                        "-->
+<!--                                                        class="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-100"-->
+<!--                                                    >-->
+<!--                                                        PDF-->
+<!--                                                    </a>-->
                                                 </div>
                                             </td>
                                         </tr>

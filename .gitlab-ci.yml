@@ -1,0 +1,88 @@
+# .gitlab-ci.yml
+default:
+  tags:
+    - windows
+  before_script:
+    - $ErrorActionPreference = 'Stop'
+    - chcp 65001 | Out-Null
+    - Set-Location $env:CI_PROJECT_DIR
+
+variables:
+  DEPLOY_ROOT: 'S:\inetpub\vyuctovani'
+  RELEASE_DIR: '$CI_PROJECT_DIR\release'
+  COMPOSER_CACHE_DIR: '$CI_PROJECT_DIR\.cache\composer'
+  NPM_CACHE_DIR: '$CI_PROJECT_DIR\.cache\npm'
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cache/composer
+    - .cache/npm
+
+stages:
+  - test
+  - build
+  - deploy
+
+test:
+  stage: test
+  script:
+    - php -v
+    - composer install --prefer-dist --no-interaction
+    - php artisan test --parallel
+  rules:
+    - if: $CI_COMMIT_BRANCH
+  artifacts:
+    when: always
+    reports:
+      junit: storage/test-results/*.xml
+    expire_in: 1 week
+
+build:
+  stage: build
+  needs: ["test"]
+  script:
+    - composer install --prefer-dist --no-dev --no-interaction --optimize-autoloader
+    - php artisan config:cache
+    - php artisan route:cache
+    - php artisan view:cache
+    - npm ci --cache $env:NPM_CACHE_DIR --prefer-offline
+    - npm run build
+    - if (Test-Path $env:RELEASE_DIR) { Remove-Item $env:RELEASE_DIR -Recurse -Force }
+    - New-Item -ItemType Directory -Path $env:RELEASE_DIR | Out-Null
+    # copy application code (exclude environment-specific folders)
+    - $CopyList = @(
+        'app','bootstrap','config','database','public','resources',
+        'routes','vendor','artisan','composer.json','composer.lock',
+        'package.json','package-lock.json','phpunit.xml','.env.example'
+      )
+    - foreach ($item in $CopyList) { Copy-Item $item -Destination $env:RELEASE_DIR -Recurse -Force }
+    - New-Item -ItemType Directory -Path "$env:RELEASE_DIR\storage\framework" -Force | Out-Null
+    - Copy-Item storage\framework -Destination "$env:RELEASE_DIR\storage" -Recurse -Force
+    - Compress-Archive -Path "$env:RELEASE_DIR\*" -DestinationPath "$env:CI_PROJECT_DIR\release.zip" -Force
+  artifacts:
+    paths:
+      - release.zip
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+deploy_production:
+  stage: deploy
+  needs: ["build"]
+  environment:
+    name: production
+    url: https://your-production-host/
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  script:
+    - $tmp = Join-Path $env:CI_PROJECT_DIR 'deploy_tmp'
+    - if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    - New-Item -ItemType Directory -Path $tmp | Out-Null
+    - Expand-Archive -Path "$env:CI_PROJECT_DIR\release.zip" -DestinationPath $tmp -Force
+    - robocopy $tmp $env:DEPLOY_ROOT /MIR /NFL /NDL /NP /NJH /NJS /XD storage .git node_modules /XF .env
+    - Remove-Item $tmp -Recurse -Force
+    - php "$env:DEPLOY_ROOT\artisan" migrate --force
+    - php "$env:DEPLOY_ROOT\artisan" optimize
+    - php "$env:DEPLOY_ROOT\artisan" storage:link
