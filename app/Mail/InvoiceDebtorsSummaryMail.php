@@ -35,8 +35,20 @@ class InvoiceDebtorsSummaryMail extends Mailable implements ShouldQueue
     {
         $subjectParts = ['Souhrn vyúčtování'];
 
-        if ($this->invoice->id !== null) {
-            $subjectParts[] = $this->invoice->billing_period;
+        $providerLabel = $this->invoice->provider_label ?? $this->invoice->provider;
+
+        if (!empty($providerLabel)) {
+            $subjectParts[] = $providerLabel;
+        }
+
+        if (!empty($this->invoice->billing_period)) {
+            try {
+                $subjectParts[] = \Illuminate\Support\Carbon::createFromFormat('Y-m', $this->invoice->billing_period)
+                    ->locale('cs')
+                    ->translatedFormat('F Y');
+            } catch (\Throwable $e) {
+                $subjectParts[] = $this->invoice->billing_period;
+            }
         }
 
         return $this->subject(implode(' ', $subjectParts))

@@ -122,13 +122,21 @@ it('imports invoice rows for every matching phone number', function () {
 
     $persons = Person::with(['groups.tariffs', 'phones'])->get();
 
-    $importService = new ImportService($servicesData, $mapping, $persons, 'services.csv', '2025-01');
+    $importService = new ImportService(
+        $servicesData,
+        $mapping,
+        $persons,
+        'services.csv',
+        '2025-01',
+        Invoice::PROVIDER_T_MOBILE
+    );
 
     $result = $importService->process();
 
     $invoice = Invoice::with('people')->find($result['invoice_id']);
 
     expect($invoice)->not->toBeNull()
+        ->and($invoice->provider)->toBe(Invoice::PROVIDER_T_MOBILE)
         ->and($invoice->people)->toHaveCount(2)
         ->and($invoice->people->pluck('phone')->all())
         ->toEqualCanonicalizing($phones);

@@ -16,7 +16,7 @@
                 <p style="margin:0 0 28px;font-size:15px;line-height:1.6;">
                     přehled
                     @if($invoice)
-                        čísla <strong>{{ $invoicePerson->phone }}</strong> za období
+                        čísla <strong>{{ $invoicePerson->phone }}</strong>
                         @php
                             $billingLabel = null;
                             if (!empty($invoice->billing_period)) {
@@ -28,8 +28,14 @@
                                     $billingLabel = $invoice->billing_period;
                                 }
                             }
+                            $providerLabel = $invoice->provider_label ?? $invoice->provider;
                         @endphp
-                        <strong>{{ $billingLabel }}</strong>
+                        @if($providerLabel)
+                            u poskytovatele <strong>{{ $providerLabel }}</strong>
+                        @endif
+                        @if($billingLabel)
+                            za období <strong>{{ $billingLabel }}</strong>
+                        @endif
                     @else
                         za evidovaný záznam
                     @endif

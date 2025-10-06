@@ -254,6 +254,8 @@ class InvoiceController extends Controller
             'source_filename' => $invoice->source_filename,
             'billing_period' => $invoice->billing_period,
             'billing_period_label' => $this->formatBillingPeriod($invoice->billing_period),
+            'provider' => $invoice->provider,
+            'provider_label' => $invoice->provider_label,
             'row_count' => $invoice->row_count,
             'created_at' => optional($invoice->created_at)->toDateTimeString(),
             'people_count' => $people->count(),
@@ -312,6 +314,8 @@ class InvoiceController extends Controller
                 'source_filename' => $invoice->source_filename,
                 'billing_period' => $invoice->billing_period,
                 'billing_period_label' => $this->formatBillingPeriod($invoice->billing_period),
+                'provider' => $invoice->provider,
+                'provider_label' => $invoice->provider_label,
                 'created_at' => optional($invoice->created_at)->toDateTimeString(),
             ] : null,
             'lines' => $invoicePerson->lines
@@ -362,10 +366,24 @@ class InvoiceController extends Controller
 
     private function buildDownloadFileName(Invoice $invoice, string $format): string
     {
+        $parts = [];
+
+        if (!empty($invoice->billing_period)) {
+            $parts[] = $invoice->billing_period;
+        }
+
+        if (!empty($invoice->provider)) {
+            $parts[] = $invoice->provider;
+        }
+
         $base = $invoice->source_filename ?: 'invoice-' . $invoice->id;
         $name = pathinfo($base, PATHINFO_FILENAME) ?: $base;
 
-        return sprintf('%s.%s', str($name)->slug('-'), $format);
+        $parts[] = $name;
+
+        $slug = str(implode('-', $parts))->slug('-');
+
+        return sprintf('%s.%s', $slug, $format);
     }
 
     private function buildDefaultEmailFromName(?string $name): ?string

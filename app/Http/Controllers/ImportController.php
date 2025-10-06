@@ -14,6 +14,7 @@ class ImportController extends Controller
         return inertia('Import', [
             'tariffs' => \App\Models\Tariff::all(),
             'groups' => \App\Models\Group::with('tariffs')->get(),
+            'providers' => Invoice::PROVIDERS,
         ]);
     }
     public function processImport(Request $request)
@@ -22,6 +23,7 @@ class ImportController extends Controller
             'services' => 'required|file|mimes:csv,txt',
             'mapping'  => 'required|string',
             'billing_period' => 'required|date_format:Y-m',
+            'provider' => 'required|in:' . implode(',', array_keys(Invoice::PROVIDERS)),
         ]);
 
         $mapping = json_decode($request->input('mapping'), true);
@@ -48,7 +50,8 @@ class ImportController extends Controller
             $mapping,
             $persons,
             $sourceFilename,
-            (string) $request->input('billing_period')
+            (string) $request->input('billing_period'),
+            (string) $request->input('provider')
         );
         $processed = $importService->process();
 

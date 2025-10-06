@@ -13,6 +13,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'billing_period',
+        'provider',
         'source_filename',
         'mapping',
         'row_count',
@@ -22,10 +23,34 @@ class Invoice extends Model
 
     protected $casts = [
         'billing_period' => 'string',
+        'provider' => 'string',
         'mapping' => 'array',
         'total_without_vat' => 'float',
         'total_with_vat' => 'float',
     ];
+
+    public const PROVIDER_T_MOBILE = 't-mobile';
+    public const PROVIDER_O2 = 'o2';
+    public const PROVIDER_OTHER = 'other';
+
+    public const PROVIDERS = [
+        self::PROVIDER_T_MOBILE => 'T-Mobile',
+        self::PROVIDER_O2 => 'O2',
+        self::PROVIDER_OTHER => 'Jiné',
+    ];
+
+    protected $appends = [
+        'provider_label',
+    ];
+
+    public function getProviderLabelAttribute(): ?string
+    {
+        if ($this->provider === null) {
+            return null;
+        }
+
+        return self::PROVIDERS[$this->provider] ?? $this->provider;
+    }
 
     public function people(): HasMany
     {
