@@ -134,7 +134,7 @@ class InvoiceController extends Controller
             }
         }
 
-        if (getenv('APP_ENV') !== 'prod' && $recipientEmail !== getenv('TEST_EMAIL')){
+        if (getenv('APP_ENV') !== 'production' && $recipientEmail !== getenv('TEST_EMAIL')){
             return response()->json([
                 'message' => 'E-mail '.$recipientEmail.' nebyl odeslán(dev)',
                 'email' => $recipientEmail,
