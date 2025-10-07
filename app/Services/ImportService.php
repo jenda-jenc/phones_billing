@@ -5,22 +5,22 @@ namespace App\Services;
 use App\Data\ImportedPersonData;
 use App\Data\ServiceEntry;
 use App\Models\Invoice;
+use App\Models\Person;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ImportService
 {
     private array $mapping;
-    private array $servicesData;
+    private iterable $servicesData;
     private Collection $persons;
     private ?string $sourceFilename;
     private ?string $billingPeriod;
     private ?string $provider;
 
     public function __construct(
-        array $servicesData,
+        iterable $servicesData,
         array $mapping,
-        Collection $persons,
         ?string $sourceFilename = null,
         ?string $billingPeriod = null,
         ?string $provider = null
@@ -28,7 +28,7 @@ class ImportService
     {
         $this->servicesData = $servicesData;
         $this->mapping = $mapping;
-        $this->persons = $persons;
+        $this->persons = new Collection();
         $this->sourceFilename = $sourceFilename;
         $this->billingPeriod = $billingPeriod;
         $this->provider = $provider;
@@ -37,6 +37,7 @@ class ImportService
     public function process(): array
     {
         $mobiles = $this->mapServices();
+        $this->persons = $this->loadPersons(array_keys($mobiles));
         $calculation = $this->calculatePersons($mobiles);
 
         $invoice = DB::transaction(function () use ($calculation) {
@@ -56,23 +57,65 @@ class ImportService
     {
         $mobiles = [];
         foreach ($this->servicesData as $k => $row) {
-            if ($k === 0) continue;
-
-            $phone = $row[$this->mapping['phone_number']['index']];
-
-            $group = '';
-            if (
-                isset($this->mapping['group']['index'])
-                && is_numeric($this->mapping['group']['index'])
-                && isset($row[$this->mapping['group']['index']])
-            ) {
-                $group = $row[$this->mapping['group']['index']];
+            if ($k === 0) {
+                continue;
             }
 
-            $tarif   = $row[$this->mapping['tarif']['index']];
-            $service = $row[$this->mapping['service']['index']];
-            $price   = (float) str_replace(',', '.', $row[$this->mapping['price']['index']]);
-            $vat     = (float) str_replace(',', '.', $row[$this->mapping['vat']['index']]);
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $phoneIndex = $this->mapping['phone_number']['index'] ?? null;
+            $phoneKey = is_numeric($phoneIndex) ? (int) $phoneIndex : null;
+
+            if ($phoneKey === null || !array_key_exists($phoneKey, $row)) {
+                continue;
+            }
+
+            $phone = $row[$phoneKey];
+
+            if ($phone === null || $phone === '') {
+                continue;
+            }
+
+            $group = '';
+            $groupIndex = $this->mapping['group']['index'] ?? null;
+            $groupKey = is_numeric($groupIndex) ? (int) $groupIndex : null;
+
+            if (
+                $groupKey !== null
+                && array_key_exists($groupKey, $row)
+            ) {
+                $group = $row[$groupKey];
+            }
+
+            $tarifIndex = $this->mapping['tarif']['index'] ?? null;
+            $serviceIndex = $this->mapping['service']['index'] ?? null;
+            $priceIndex = $this->mapping['price']['index'] ?? null;
+            $vatIndex = $this->mapping['vat']['index'] ?? null;
+
+            $tarifKey = is_numeric($tarifIndex) ? (int) $tarifIndex : null;
+            $serviceKey = is_numeric($serviceIndex) ? (int) $serviceIndex : null;
+            $priceKey = is_numeric($priceIndex) ? (int) $priceIndex : null;
+            $vatKey = is_numeric($vatIndex) ? (int) $vatIndex : null;
+
+            if (
+                $tarifKey === null
+                || $serviceKey === null
+                || $priceKey === null
+                || $vatKey === null
+                || !array_key_exists($tarifKey, $row)
+                || !array_key_exists($serviceKey, $row)
+                || !array_key_exists($priceKey, $row)
+                || !array_key_exists($vatKey, $row)
+            ) {
+                continue;
+            }
+
+            $tarif   = $row[$tarifKey];
+            $service = $row[$serviceKey];
+            $price   = (float) str_replace(',', '.', (string) $row[$priceKey]);
+            $vat     = (float) str_replace(',', '.', (string) $row[$vatKey]);
             $cena_s_dph = $price + ($price * ($vat / 100));
 
             if (!isset($mobiles[$phone])) {
@@ -92,6 +135,25 @@ class ImportService
             $mobiles[$phone]['vat'] = $vat;
         }
         return $mobiles;
+    }
+
+    private function loadPersons(array $phones): Collection
+    {
+        if ($phones === []) {
+            return new Collection();
+        }
+
+        return Person::query()
+            ->with([
+                'groups.tariffs',
+                'phones' => static function ($query) use ($phones) {
+                    $query->whereIn('phone', $phones);
+                },
+            ])
+            ->whereHas('phones', static function ($query) use ($phones) {
+                $query->whereIn('phone', $phones);
+            })
+            ->get();
     }
 
     /**
