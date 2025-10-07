@@ -46,6 +46,7 @@ Route::get('/import/data', function () {
     return [
         'tariffs' => \App\Models\Tariff::all(),
         'groups' => \App\Models\Group::with('tariffs')->get(),
+        'providers' => \App\Models\Invoice::PROVIDERS,
     ];
 })->name('import.data');
 //Route::get('/osoby', function () {

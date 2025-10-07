@@ -157,7 +157,11 @@ const formatCurrency = (value) => {
                                             <td
                                                 class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"
                                             >
-                                                t-mobile / o2 / jiné
+                                                {{
+                                                    invoice.provider_label ??
+                                                    invoice.provider ??
+                                                    '—'
+                                                }}
                                             </td>
                                             <td
                                                 class="whitespace-nowrap px-4 py-3 text-sm text-gray-700"

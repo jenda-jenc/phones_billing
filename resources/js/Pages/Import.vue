@@ -12,6 +12,7 @@ const loadingCustom = inject('loadingCustom', ref(false));
 const columnsServices = ref([]);
 const servicesFileObj = ref(null);
 const billingPeriod = ref('');
+const provider = ref('');
 
 const mappingFields = ref({
     phone_number: { label: 'Telefonní číslo', value: '' },
@@ -37,6 +38,15 @@ const allTariffNames = computed(() =>
 );
 const allTariffs = computed(() => usePage().props.tariffs || []);
 const allGroups = computed(() => usePage().props.groups || []);
+
+const providerOptions = computed(() => {
+    const providers = usePage().props.providers || {};
+
+    return Object.entries(providers).map(([value, label]) => ({
+        value,
+        label,
+    }));
+});
 
 const allGroupTariffNames = computed(() => {
     const groups = usePage().props.groups || [];
@@ -94,6 +104,7 @@ const refreshTariffsAndGroups = async () => {
         const resp = await axios.get(route('import.data'));
         if (resp.data.tariffs) usePage().props.tariffs = resp.data.tariffs;
         if (resp.data.groups) usePage().props.groups = resp.data.groups;
+        if (resp.data.providers) usePage().props.providers = resp.data.providers;
     } catch (e) {
         alert('Nepodařilo se aktualizovat seznam tarifů.');
     }
@@ -200,6 +211,7 @@ const processMapping = () => {
     formData.append('services', servicesFileObj.value);
     formData.append('mapping', JSON.stringify(mappingFields.value));
     formData.append('billing_period', billingPeriod.value);
+    formData.append('provider', provider.value);
     $inertia.post(route('import.process'), formData, {
         forceFormData: true,
     });
@@ -209,6 +221,7 @@ const canShowProcessButton = computed(() => {
     return (
         servicesFileObj.value !== null &&
         billingPeriod.value !== '' &&
+        provider.value !== '' &&
         Object.values(mappingFields.value).every((field) => field.value !== '')
     );
 });
@@ -267,7 +280,9 @@ const canShowProcessButton = computed(() => {
                             </p>
                         </div>
                     </div>
-                    <div class="mt-6 flex justify-center">
+                    <div
+                        class="mt-6 flex flex-col items-center justify-center gap-4 md:flex-row"
+                    >
                         <label class="flex flex-col items-start gap-2 text-sm text-gray-700">
                             <span>Fakturační období</span>
                             <input
@@ -276,6 +291,26 @@ const canShowProcessButton = computed(() => {
                                 class="rounded border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             />
+                        </label>
+
+                        <label class="flex flex-col items-start gap-2 text-sm text-gray-700">
+                            <span>Poskytovatel</span>
+                            <select
+                                v-model="provider"
+                                class="rounded border px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                                <option disabled value="">
+                                    Vyberte poskytovatele
+                                </option>
+                                <option
+                                    v-for="option in providerOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </option>
+                            </select>
                         </label>
                     </div>
                     <!-- Mapování sloupců -->

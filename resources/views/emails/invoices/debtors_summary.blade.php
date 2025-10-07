@@ -24,12 +24,17 @@
                         $billingLabel = $invoice->billing_period;
                     }
                 }
+                $providerLabel = $invoice->provider_label ?? $invoice->provider;
             @endphp
 
             <p style="margin:0 0 26px;font-size:15px;line-height:1.6;">
                 Níže naleznete přehled osob a jejich telefonních čísel s částkami k úhradě
+                @if($providerLabel)
+                    u poskytovatele <strong>{{ $providerLabel }}</strong>
+                @endif
                 @if($billingLabel)
-                    za období: <strong>{{ \Illuminate\Support\Str::lower($billingLabel) }}</strong>
+                    za období:
+                    <strong>{{ \Illuminate\Support\Str::lower($billingLabel) }}</strong>
                 @endif
             </p>
 

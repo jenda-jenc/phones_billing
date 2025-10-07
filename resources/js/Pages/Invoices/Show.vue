@@ -128,6 +128,15 @@ const formatCurrency = (value) => {
                             <template v-else> Bez vazby </template>
                         </span>
                     </p>
+                    <p v-if="invoicePerson.invoice?.provider_label">
+                        Poskytovatel:
+                        <span class="font-medium text-gray-700">
+                            {{
+                                invoicePerson.invoice.provider_label ??
+                                invoicePerson.invoice.provider
+                            }}
+                        </span>
+                    </p>
                     <p v-if="invoicePerson.invoice?.created_at">
                         Vytvořeno: {{ invoicePerson.invoice.created_at }}
                     </p>

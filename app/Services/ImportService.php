@@ -15,13 +15,15 @@ class ImportService
     private Collection $persons;
     private ?string $sourceFilename;
     private ?string $billingPeriod;
+    private ?string $provider;
 
     public function __construct(
         array $servicesData,
         array $mapping,
         Collection $persons,
         ?string $sourceFilename = null,
-        ?string $billingPeriod = null
+        ?string $billingPeriod = null,
+        ?string $provider = null
     )
     {
         $this->servicesData = $servicesData;
@@ -29,6 +31,7 @@ class ImportService
         $this->persons = $persons;
         $this->sourceFilename = $sourceFilename;
         $this->billingPeriod = $billingPeriod;
+        $this->provider = $provider;
     }
 
     public function process(): array
@@ -247,6 +250,7 @@ class ImportService
     {
         $data = [
             'billing_period' => $this->billingPeriod,
+            'provider' => $this->provider,
             'source_filename' => $this->sourceFilename,
             'mapping' => $this->mapping,
             'row_count' => $linesCount,
@@ -254,12 +258,13 @@ class ImportService
             'total_with_vat' => $totalWithVat,
         ];
 
-        if ($this->billingPeriod === null) {
+        if ($this->billingPeriod === null || $this->provider === null) {
             return Invoice::create($data);
         }
 
         $existingInvoice = Invoice::query()
             ->where('billing_period', $this->billingPeriod)
+            ->where('provider', $this->provider)
             ->lockForUpdate()
             ->first();
 
@@ -274,7 +279,10 @@ class ImportService
         }
 
         $invoice = Invoice::updateOrCreate(
-            ['billing_period' => $this->billingPeriod],
+            [
+                'billing_period' => $this->billingPeriod,
+                'provider' => $this->provider,
+            ],
             $data
         );
 

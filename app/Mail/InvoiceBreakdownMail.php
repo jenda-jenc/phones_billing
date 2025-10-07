@@ -24,7 +24,6 @@ class InvoiceBreakdownMail extends Mailable implements ShouldQueue
         $person = $this->invoicePerson->person;
         $invoice = $this->invoicePerson->invoice;
 
-
         $billingLabel = null;
 
         if (!empty($invoice->billing_period)) {
@@ -36,7 +35,20 @@ class InvoiceBreakdownMail extends Mailable implements ShouldQueue
                 $billingLabel = $invoice->billing_period;
             }
         }
-        $subject = 'Vyúčtování ' . $billingLabel;
+
+        $providerLabel = $invoice->provider_label ?? $invoice->provider;
+
+        $subjectParts = ['Vyúčtování'];
+
+        if (!empty($providerLabel)) {
+            $subjectParts[] = $providerLabel;
+        }
+
+        if (!empty($billingLabel)) {
+            $subjectParts[] = $billingLabel;
+        }
+
+        $subject = implode(' ', $subjectParts);
 
         return $this->subject($subject)
             ->view('emails.invoices.breakdown')
