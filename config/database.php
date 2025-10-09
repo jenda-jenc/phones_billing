@@ -112,6 +112,19 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'vyuctovani_test' => [
+            'driver' => env('DB_TEST_DRIVER', env('DB_DRIVER', 'sqlsrv')),
+            'url' => env('DB_TEST_URL', env('DB_URL')),
+            'host' => env('DB_TEST_HOST', env('DB_HOST', 'localhost')),
+            'port' => env('DB_TEST_PORT', env('DB_PORT', '1433')),
+            'database' => env('DB_TEST_DATABASE', 'vyuctovani_test'),
+            'username' => env('DB_TEST_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_TEST_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('DB_TEST_CHARSET', env('DB_CHARSET', 'utf8')),
+            'prefix' => '',
+            'prefix_indexes' => true,
+        ],
+
     ],
 
     /*
