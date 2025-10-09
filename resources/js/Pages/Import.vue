@@ -25,6 +25,7 @@ const mappingFields = ref({
 const uniqueServices = ref([]);
 const unknownServices = ref([]);
 const unassignedServices = ref([]);
+const showUnassigned = ref(false);
 const servicesCsvText = ref('');
 const isSavingTariffs = ref(false);
 
@@ -104,7 +105,8 @@ const refreshTariffsAndGroups = async () => {
         const resp = await axios.get(route('import.data'));
         if (resp.data.tariffs) usePage().props.tariffs = resp.data.tariffs;
         if (resp.data.groups) usePage().props.groups = resp.data.groups;
-        if (resp.data.providers) usePage().props.providers = resp.data.providers;
+        if (resp.data.providers)
+            usePage().props.providers = resp.data.providers;
     } catch (e) {
         alert('Nepodařilo se aktualizovat seznam tarifů.');
     }
@@ -136,11 +138,13 @@ function openAssignModal(serviceName) {
     assignError.value = '';
     showAssignModal.value = true;
 }
+
 function closeAssignModal() {
     showAssignModal.value = false;
     assignServiceName.value = '';
     assignError.value = '';
 }
+
 const assignServiceToGroup = async ({ groupId, tariffId, action }) => {
     assignError.value = '';
     if (!tariffId || !groupId || !action) {
@@ -283,7 +287,9 @@ const canShowProcessButton = computed(() => {
                     <div
                         class="mt-6 flex flex-col items-center justify-center gap-4 md:flex-row"
                     >
-                        <label class="flex flex-col items-start gap-2 text-sm text-gray-700">
+                        <label
+                            class="flex flex-col items-start gap-2 text-sm text-gray-700"
+                        >
                             <span>Fakturační období</span>
                             <input
                                 type="month"
@@ -293,7 +299,9 @@ const canShowProcessButton = computed(() => {
                             />
                         </label>
 
-                        <label class="flex flex-col items-start gap-2 text-sm text-gray-700">
+                        <label
+                            class="flex flex-col items-start gap-2 text-sm text-gray-700"
+                        >
                             <span>Poskytovatel</span>
                             <select
                                 v-model="provider"
@@ -412,26 +420,44 @@ const canShowProcessButton = computed(() => {
                     <!-- Služby, které nejsou přiřazeny žádné skupině -->
                     <div v-if="unassignedServices.length" class="mt-6">
                         <div
-                            class="mb-2 rounded border border-blue-400 bg-blue-100 px-4 py-3 text-blue-900"
+                            class="flex cursor-pointer select-none items-center gap-2 rounded border border-blue-400 bg-blue-100 px-4 py-3 text-blue-900"
+                            @click="showUnassigned = !showUnassigned"
                         >
-                            <b>Info:</b> Tyto služby nejsou přiřazeny k žádné
-                            skupině tarifů:
-                        </div>
-                        <ul class="flex flex-wrap gap-2">
-                            <li
-                                v-for="srv in unassignedServices"
-                                :key="srv"
-                                class="flex items-center gap-2 rounded bg-blue-200 px-2 py-1"
+                            <span
+                                class="inline-block transform transition-transform duration-200"
+                                :class="{ 'rotate-90': showUnassigned }"
                             >
-                                <span>{{ srv }}</span>
-                                <button
-                                    class="rounded bg-blue-500 px-2 py-0.5 text-xs text-white hover:bg-blue-600"
-                                    @click="openAssignModal(srv)"
+                                ►
+                            </span>
+                            <span>
+                                <b>Info:</b>
+                                Klikni pro zobrazení nebo skrytí služeb, které nejsou přiřazeny k žádné skupině tarifů.
+                                <span class="font-semibold"
+                                    >(celkem
+                                    {{ unassignedServices.length }})</span
                                 >
-                                    Přiřadit ke skupině
-                                </button>
-                            </li>
-                        </ul>
+                            </span>
+                        </div>
+
+                        <transition name="fade">
+                            <div v-show="showUnassigned" class="mt-2 pl-6">
+                                <ul class="flex flex-wrap gap-2">
+                                    <li
+                                        v-for="srv in unassignedServices"
+                                        :key="srv"
+                                        class="flex items-center gap-2 rounded bg-blue-200 px-2 py-1"
+                                    >
+                                        <span>{{ srv }}</span>
+                                        <button
+                                            class="rounded bg-blue-500 px-2 py-0.5 text-xs text-white hover:bg-blue-600"
+                                            @click.stop="openAssignModal(srv)"
+                                        >
+                                            Přiřadit ke skupině
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </transition>
                     </div>
 
                     <!-- Tlačítko pro spuštění zpracování -->
