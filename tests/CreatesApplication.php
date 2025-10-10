@@ -4,9 +4,12 @@ namespace Tests;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Artisan;
 
 trait CreatesApplication
 {
+    private static bool $databaseMigrated = false;
+
     /**
      * Creates the application.
      */
@@ -18,7 +21,7 @@ trait CreatesApplication
 
         $app->make(Kernel::class)->bootstrap();
 
-        $this->ensureSqliteDatabaseExists();
+        $this->refreshDatabaseSchema();
 
         return $app;
     }
@@ -41,16 +44,23 @@ trait CreatesApplication
         }
     }
 
-    private function ensureSqliteDatabaseExists(): void
+    private function refreshDatabaseSchema(): void
     {
-        if (env('DB_CONNECTION') !== 'sqlite') {
+        if (self::$databaseMigrated) {
             return;
         }
 
-        $databasePath = database_path('database.sqlite');
+        $connection = env('DB_REFRESH_CONNECTION', env('DB_CONNECTION'));
 
-        if (! file_exists($databasePath)) {
-            touch($databasePath);
+        if ($connection === null || $connection === '') {
+            return;
         }
+
+        Artisan::call('migrate:fresh', [
+            '--database' => $connection,
+            '--force' => true,
+        ]);
+
+        self::$databaseMigrated = true;
     }
 }

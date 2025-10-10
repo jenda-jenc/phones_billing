@@ -17,9 +17,11 @@ it('creates a person with multiple phone numbers', function () {
 
     $response = post(route('persons.store'), [
         'name' => 'John Doe',
-        'phones' => ['123456789', '987654321'],
+        'phones' => [
+            ['phone' => '123456789', 'limit' => 250],
+            ['phone' => '987654321', 'limit' => 300],
+        ],
         'department' => 'IT',
-        'limit' => 250,
     ]);
 
     $response->assertRedirect(route('persons.index'));
@@ -29,7 +31,9 @@ it('creates a person with multiple phone numbers', function () {
     expect($person)->not->toBeNull()
         ->and($person->phones)->toHaveCount(2)
         ->and($person->phones->pluck('phone')->all())
-        ->toEqualCanonicalizing(['123456789', '987654321']);
+        ->toEqualCanonicalizing(['123456789', '987654321'])
+        ->and($person->phones->pluck('limit')->all())
+        ->toEqualCanonicalizing([250.0, 300.0]);
 });
 
 it('updates phone numbers by replacing removed entries', function () {
@@ -40,20 +44,21 @@ it('updates phone numbers by replacing removed entries', function () {
     $person = Person::create([
         'name' => 'Jane Smith',
         'department' => 'Finance',
-        'limit' => 300,
     ]);
 
     $person->phones()->createMany([
-        ['phone' => '555111222'],
-        ['phone' => '555222333'],
+        ['phone' => '555111222', 'limit' => 200],
+        ['phone' => '555222333', 'limit' => 250],
     ]);
 
     $response = put(route('persons.update', $person), [
         'id' => $person->id,
         'name' => 'Jane Smith',
         'department' => 'Finance',
-        'limit' => 400,
-        'phones' => ['555222333', '555999888'],
+        'phones' => [
+            ['phone' => '555222333', 'limit' => 450],
+            ['phone' => '555999888', 'limit' => 500],
+        ],
     ]);
 
     $response->assertRedirect(route('persons.index'));
@@ -62,7 +67,9 @@ it('updates phone numbers by replacing removed entries', function () {
 
     expect($person->phones)->toHaveCount(2)
         ->and($person->phones->pluck('phone')->all())
-        ->toEqualCanonicalizing(['555222333', '555999888']);
+        ->toEqualCanonicalizing(['555222333', '555999888'])
+        ->and($person->phones->pluck('limit')->all())
+        ->toEqualCanonicalizing([450.0, 500.0]);
 });
 
 it('lists people together with all of their phone numbers', function () {
@@ -72,12 +79,11 @@ it('lists people together with all of their phone numbers', function () {
     $person = Person::create([
         'name' => 'Listing Person',
         'department' => 'Support',
-        'limit' => 150,
     ]);
 
     $person->phones()->createMany([
-        ['phone' => '444111000'],
-        ['phone' => '444222000'],
+        ['phone' => '444111000', 'limit' => 100],
+        ['phone' => '444222000', 'limit' => 200],
     ]);
 
     $response = get(route('persons.index'));
@@ -95,14 +101,13 @@ it('imports invoice rows for every matching phone number', function () {
     $person = Person::create([
         'name' => 'Imported Person',
         'department' => 'Logistics',
-        'limit' => 0,
     ]);
 
     $phones = ['777000111', '777000222'];
 
     $person->phones()->createMany([
-        ['phone' => $phones[0]],
-        ['phone' => $phones[1]],
+        ['phone' => $phones[0], 'limit' => 0],
+        ['phone' => $phones[1], 'limit' => 0],
     ]);
 
     $mapping = [
