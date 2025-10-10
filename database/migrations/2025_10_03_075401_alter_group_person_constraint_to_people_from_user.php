@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('group_person', function (Blueprint $table) {
             // zrušení starého FK na users
             $table->dropForeign('group_user_user_id_foreign');

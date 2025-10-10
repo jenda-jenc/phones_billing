@@ -46,13 +46,15 @@ trait CreatesApplication
 
     private function refreshDatabaseSchema(): void
     {
-        if (self::$databaseMigrated) {
-            return;
-        }
-
         $connection = env('DB_REFRESH_CONNECTION', env('DB_CONNECTION'));
 
         if ($connection === null || $connection === '') {
+            return;
+        }
+
+        $this->ensureSqliteDatabaseExists($connection);
+
+        if (self::$databaseMigrated) {
             return;
         }
 
@@ -62,5 +64,35 @@ trait CreatesApplication
         ]);
 
         self::$databaseMigrated = true;
+    }
+
+    private function ensureSqliteDatabaseExists(string $connection): void
+    {
+        $config = config("database.connections.$connection");
+
+        if (! is_array($config) || ($config['driver'] ?? null) !== 'sqlite') {
+            return;
+        }
+
+        $database = $config['database'] ?? null;
+
+        if ($database === null || $database === '' || $database === ':memory:') {
+            return;
+        }
+
+        if (! str_starts_with($database, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Za-z]:\\\\/', $database)) {
+            $database = database_path($database);
+            config(["database.connections.$connection.database" => $database]);
+        }
+
+        $directory = dirname($database);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        if (! file_exists($database)) {
+            touch($database);
+        }
     }
 }

@@ -83,6 +83,31 @@ return new class extends Migration
             return;
         }
 
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::dropIfExists('group_person');
+
+            Schema::create('group_person', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('group_id');
+                $table->unsignedBigInteger('person_id');
+                $table->timestamps();
+
+                $table->foreign('group_id', 'group_person_group_id_foreign')
+                    ->references('id')
+                    ->on('groups')
+                    ->cascadeOnDelete();
+
+                $table->foreign('person_id', 'group_person_person_id_foreign')
+                    ->references('id')
+                    ->on('people')
+                    ->cascadeOnDelete();
+
+                $table->unique(['group_id', 'person_id'], 'group_person_group_id_person_id_unique');
+            });
+
+            return;
+        }
+
         if (Schema::hasColumn('group_person', 'user_id') && !Schema::hasColumn('group_person', 'person_id')) {
             $this->dropForeignIfExists('group_person', ['group_person_user_id_foreign', 'group_user_user_id_foreign']);
 
@@ -211,6 +236,10 @@ return new class extends Migration
     private function dropForeignIfExists(string $table, array $foreignKeyNames): void
     {
         if (!Schema::hasTable($table)) {
+            return;
+        }
+
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
             return;
         }
 

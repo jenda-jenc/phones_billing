@@ -8,6 +8,10 @@ class AlterGroupUserToGroupPerson extends Migration
 {
     public function up()
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // 1. Přejmenuj tabulku, pokud existuje
         if (Schema::hasTable('group_user') && !Schema::hasTable('group_person')) {
             Schema::rename('group_user', 'group_person');
@@ -56,6 +60,10 @@ class AlterGroupUserToGroupPerson extends Migration
 
     public function down()
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Pokud tabulka existuje, proveď rollback
         if (Schema::hasTable('group_person')) {
             Schema::table('group_person', function (Blueprint $table) {
