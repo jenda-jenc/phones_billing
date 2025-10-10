@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Models\Person;
 use App\Services\ImportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\LazyCollection;
 
 class ImportController extends Controller
 {
@@ -33,22 +33,35 @@ class ImportController extends Controller
             $mapping['group'] = null; // nebo ['index' => null], dle implementace v service
         }
 
-        $servicesData = [];
         $sourceFilename = $request->file('services')->getClientOriginalName();
-        if (($handle = fopen($request->file('services')->getRealPath(), 'r')) !== false) {
-            while (($row = fgetcsv($handle, 100000, ';')) !== false) {
-                $row = array_map(fn($f) => iconv('windows-1250', 'UTF-8', $f), $row);
-                $servicesData[] = $row;
-            }
-            fclose($handle);
-        }
 
-        $persons = Person::with(['groups.tariffs', 'phones'])->get();
+        $servicesData = LazyCollection::make(function () use ($request) {
+            $handle = fopen($request->file('services')->getRealPath(), 'r');
+
+            if ($handle === false) {
+                return;
+            }
+
+            try {
+                while (($row = fgetcsv($handle, 0, ';')) !== false) {
+                    yield array_map(static function ($field) {
+                        if (!is_string($field)) {
+                            return $field;
+                        }
+
+                        $value = iconv('windows-1250', 'UTF-8//IGNORE', $field);
+
+                        return $value === false ? $field : $value;
+                    }, $row);
+                }
+            } finally {
+                fclose($handle);
+            }
+        });
 
         $importService = new ImportService(
             $servicesData,
             $mapping,
-            $persons,
             $sourceFilename,
             (string) $request->input('billing_period'),
             (string) $request->input('provider')
